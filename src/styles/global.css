@@ -15,7 +15,7 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: "Plus Jakarta Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
   #root {
@@ -30,4 +30,37 @@
   .mono {
     font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   }
+}
+
+.liquid-glass {
+  background: hsl(var(--foreground) / 0.03);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: none;
+  box-shadow: inset 0 1px 1px hsl(var(--foreground) / 0.1);
+  position: relative;
+  overflow: hidden;
+}
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    hsl(var(--foreground) / 0.45) 0%,
+    hsl(var(--foreground) / 0.15) 20%,
+    hsl(var(--foreground) / 0) 40%,
+    hsl(var(--foreground) / 0) 60%,
+    hsl(var(--foreground) / 0.15) 80%,
+    hsl(var(--foreground) / 0.45) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }

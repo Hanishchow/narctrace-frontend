@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { AlertTriangle, LogOut, ShieldCheck } from "lucide-react";
 import { health, getToken, setToken } from "./api/client";
 import type {
@@ -8,19 +8,25 @@ import type {
   Officer,
 } from "./api/types";
 import { Disclaimer } from "./components/Disclaimer";
-import { ThemeToggle } from "./components/ThemeToggle";
 import { Sidebar } from "./components/Sidebar";
+import { DotGrid } from "./components/DotGrid";
 import { AppToaster } from "./components/AppToaster";
 import { ThemeProvider } from "./lib/theme";
 import { DemoModeProvider } from "./lib/demoMode";
 import { cn } from "./lib/utils";
+import { LandingScreen } from "./screens/LandingScreen";
 import { LoginScreen } from "./screens/LoginScreen";
 import { StartTestScreen } from "./screens/StartTestScreen";
 import { CaptureScreen } from "./screens/CaptureScreen";
 import { ResultScreen } from "./screens/ResultScreen";
 import { HistoryScreen } from "./screens/HistoryScreen";
+import { Skeleton } from "./components/Skeleton";
 
-type Screen = "start" | "capture" | "result" | "history";
+// Overview pulls in recharts + TanStack Table — code-split so the landing
+// page, login, and the rest of the app don't pay for that bundle weight.
+const OverviewScreen = lazy(() => import("./screens/OverviewScreen").then((m) => ({ default: m.OverviewScreen })));
+
+type Screen = "overview" | "start" | "capture" | "result" | "history";
 
 // Backend health, checked on boot and shown as a persistent banner if down.
 type Backend = "checking" | "ok" | "unreachable";
@@ -32,8 +38,9 @@ export interface TestSession {
 
 export function App() {
   const [officer, setOfficer] = useState<Officer | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
   const [demo, setDemo] = useState(false);
-  const [screen, setScreen] = useState<Screen>("start");
+  const [screen, setScreen] = useState<Screen>("overview");
   const [backend, setBackend] = useState<Backend>("checking");
   const [session, setSession] = useState<TestSession | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -62,19 +69,20 @@ export function App() {
     setDemo(false);
     setSession(null);
     setResult(null);
-    setScreen("start");
+    setScreen("overview");
+    setShowLogin(false);
   };
 
   const handleLogin = (o: Officer) => {
     setOfficer(o);
     setDemo(false);
-    setScreen("start");
+    setScreen("overview");
   };
 
   const handleDemoLogin = (o: Officer) => {
     setOfficer(o);
     setDemo(true);
-    setScreen("start");
+    setScreen("overview");
   };
 
   const startCapture = (s: TestSession) => {
@@ -109,17 +117,23 @@ export function App() {
     ) : null;
 
   if (!officer) {
+    if (!showLogin) {
+      return (
+        <ThemeProvider>
+          <LandingScreen onGetStarted={() => setShowLogin(true)} />
+          <AppToaster />
+        </ThemeProvider>
+      );
+    }
     return (
       <ThemeProvider>
         <div className="relative flex min-h-screen flex-col bg-background">
           {banner}
-          <div className="absolute right-4 top-4 z-10">
-            <ThemeToggle />
-          </div>
           <LoginScreen
             onLogin={handleLogin}
             onDemoLogin={handleDemoLogin}
             backendReady={backend !== "unreachable"}
+            onBack={() => setShowLogin(false)}
           />
           <Disclaimer />
         </div>
@@ -128,23 +142,26 @@ export function App() {
     );
   }
 
+  const goOverview = () => setScreen("overview");
   const goStart = () => setScreen("start");
   const goHistory = () => setScreen("history");
 
   return (
     <ThemeProvider>
       <DemoModeProvider demo={demo}>
-        <div className="flex min-h-screen flex-col bg-background lg:flex-row">
+        <DotGrid />
+        <div className="relative flex min-h-screen flex-col lg:flex-row">
           <Sidebar
             officer={officer}
             screen={screen}
             demo={demo}
+            onNavOverview={goOverview}
             onNavStart={goStart}
             onNavHistory={goHistory}
             onLogout={handleLogout}
           />
 
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="relative flex min-w-0 flex-1 flex-col">
             {banner}
             {demo && (
               <div className="flex items-center justify-center gap-2 border-b border-border bg-accent-strong/10 px-4 py-2 text-center text-xs font-medium text-accent-strong lg:hidden">
@@ -153,7 +170,13 @@ export function App() {
               </div>
             )}
             <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3 lg:hidden">
-              <span className="text-base font-bold tracking-tight">NarcTrace</span>
+              <button
+                type="button"
+                onClick={goOverview}
+                className="min-h-0 text-base font-bold tracking-tight"
+              >
+                NarcTrace
+              </button>
               <span className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span className="hidden sm:inline">
                   {officer.name} · <span className="mono">{officer.badge_id}</span>
@@ -166,17 +189,25 @@ export function App() {
                   <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                   <span className="hidden sm:inline">Sign out</span>
                 </button>
-                <ThemeToggle />
               </span>
             </header>
 
-            <main className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-10 lg:py-10">
+            <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-6 lg:px-10 lg:py-10">
               <div
                 className={cn(
-                  "mx-auto flex w-full max-w-lg flex-1 flex-col gap-6",
-                  screen === "history" ? "lg:max-w-3xl" : "lg:max-w-2xl",
+                  "flex w-full max-w-lg flex-col gap-6",
+                  screen === "history" || screen === "overview" ? "lg:max-w-4xl" : "lg:max-w-3xl",
                 )}
               >
+                {screen === "overview" && (
+                  <Suspense fallback={<Skeleton className="h-[600px] rounded-lg" />}>
+                    <OverviewScreen
+                      officerName={officer.name}
+                      onStartTest={goStart}
+                      onViewHistory={goHistory}
+                    />
+                  </Suspense>
+                )}
                 {screen === "start" && (
                   <StartTestScreen
                     onProceed={startCapture}

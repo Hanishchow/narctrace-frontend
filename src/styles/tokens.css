@@ -1,99 +1,56 @@
 /*
- * NarcTrace design tokens. Monochrome base + one precise accent — no
- * gradients, no glow. All colours as HSL triples consumed by
- * tailwind.config.js via hsl(var(--x)). No component hard-codes a colour —
- * only this file (light) and the `.dark` block (dark theme, default) do.
+ * NarcTrace design tokens. Dark-only, pure black/white system — no light
+ * theme, no colour accent, distinction carried by the Instrument Serif
+ * italic accent word and by type/spacing/contrast. All colours as HSL
+ * triples consumed by tailwind.config.js via hsl(var(--x)). No component
+ * hard-codes a colour — only this file does.
  */
 :root {
-  --background: 40 20% 97%;
-  --foreground: 220 15% 10%;
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 220 15% 10%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 100%;
 
-  --muted: 40 12% 93%;
-  --muted-foreground: 220 8% 40%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 65%;
 
-  --border: 220 10% 87%;
-  --input: 220 10% 87%;
-  --ring: 38 92% 50%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 0% 100%;
 
-  --primary: 220 15% 10%;
-  --primary-foreground: 40 20% 97%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 0%;
 
-  --accent-strong: 38 92% 50%;
-  --accent-strong-foreground: 220 20% 8%;
+  --accent-strong: 0 0% 100%;
+  --accent-strong-foreground: 0 0% 0%;
 
-  --secondary: 40 12% 93%;
-  --secondary-foreground: 220 15% 10%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 100%;
 
-  --accent: 40 12% 93%;
-  --accent-foreground: 220 15% 10%;
-
-  --destructive: 4 70% 42%;
-  --destructive-foreground: 40 20% 97%;
-
-  --positive: 152 55% 24%;
-  --positive-foreground: 40 20% 97%;
-  --positive-bg: 152 30% 92%;
-
-  --negative: 4 70% 40%;
-  --negative-foreground: 40 20% 97%;
-  --negative-bg: 4 55% 94%;
-
-  --inconclusive: 32 75% 34%;
-  --inconclusive-foreground: 40 20% 97%;
-  --inconclusive-bg: 38 60% 91%;
-
-  --radius: 0.5rem;
-  --camera-bg: 220 20% 6%;
-  --camera-scrim: 220 20% 4%;
-  --tap-min: 44px;
-}
-
-.dark {
-  --background: 220 18% 7%;
-  --foreground: 40 15% 95%;
-
-  --card: 220 16% 10%;
-  --card-foreground: 40 15% 95%;
-
-  --muted: 220 14% 13%;
-  --muted-foreground: 220 8% 60%;
-
-  --border: 220 12% 19%;
-  --input: 220 12% 19%;
-  --ring: 38 92% 55%;
-
-  --primary: 40 15% 95%;
-  --primary-foreground: 220 18% 9%;
-
-  --accent-strong: 38 92% 55%;
-  --accent-strong-foreground: 220 20% 8%;
-
-  --secondary: 220 14% 14%;
-  --secondary-foreground: 40 15% 95%;
-
-  --accent: 220 14% 14%;
-  --accent-foreground: 40 15% 95%;
+  --accent: 0 0% 12%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 4 65% 52%;
-  --destructive-foreground: 220 18% 9%;
+  --destructive-foreground: 0 0% 0%;
 
   --positive: 152 50% 45%;
-  --positive-foreground: 220 18% 9%;
+  --positive-foreground: 0 0% 0%;
   --positive-bg: 152 35% 13%;
 
   --negative: 4 65% 55%;
-  --negative-foreground: 220 18% 9%;
+  --negative-foreground: 0 0% 0%;
   --negative-bg: 4 45% 15%;
 
   --inconclusive: 34 88% 55%;
-  --inconclusive-foreground: 220 18% 9%;
+  --inconclusive-foreground: 0 0% 0%;
   --inconclusive-bg: 34 55% 14%;
 
-  --camera-bg: 220 20% 4%;
-  --camera-scrim: 220 20% 3%;
+  --hero-subtitle: 210 17% 95%;
+  --radius: 0.5rem;
+  --camera-bg: 0 0% 4%;
+  --camera-scrim: 0 0% 3%;
+  --tap-min: 44px;
 }
 
 @media (prefers-reduced-motion: reduce) {

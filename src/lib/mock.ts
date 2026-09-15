@@ -104,8 +104,55 @@ function toRecord(r: AnalysisResult): EvidenceRecord {
   };
 }
 
-// Seed a few demo records so History isn't empty on first visit.
+// Generates a larger, date-spread set of demo records purely for the
+// Overview dashboard's chart/table, so they have enough volume to render
+// meaningfully. Deterministic (seeded by index) so it doesn't reshuffle
+// on every render.
+function generateDashboardHistory(days: number): EvidenceRecord[] {
+  const operators = ["FIELD-OP-01", "FIELD-OP-02", "FIELD-OP-03"];
+  const out: EvidenceRecord[] = [];
+  let id = 100;
+  for (let d = days; d >= 0; d--) {
+    const testsToday = 1 + ((d * 7) % 4); // 1–4 tests/day, deterministic
+    for (let t = 0; t < testsToday; t++) {
+      id += 1;
+      const pick = RESULT_POOL[(d + t) % RESULT_POOL.length];
+      const when = new Date(Date.now() - d * 86_400_000 - t * 3_600_000);
+      out.push(
+        toRecord({
+          success: true,
+          test_id: `FT-${pad(id, 5)}`,
+          result: pick.result,
+          quality: {
+            passed: (d + t) % 5 !== 0,
+            blur_score: 95 + ((d * 13 + t * 7) % 60),
+            exposure_status: (d + t) % 7 === 0 ? "overexposed" : "normal",
+            glare: (d + t) % 9 === 0,
+          },
+          color: { hex: pick.hex, lab: [50, 20, -30], delta_e_positive: pick.dp, delta_e_negative: pick.dn },
+          profile: MOCK_PROFILES[(d + t) % MOCK_PROFILES.length],
+          evidence: {
+            timestamp_utc: when.toISOString(),
+            timestamp_local: when.toLocaleString(),
+            operator_id: operators[(d + t) % operators.length],
+            gps: seedGps,
+            image_sha256: Array.from({ length: 64 }, (_, k) => "0123456789abcdef"[(d + t + k) % 16]).join(""),
+            image_url: "",
+          },
+          disclaimer: DEMO_DISCLAIMER,
+        }),
+      );
+    }
+  }
+  return out.reverse();
+}
+
 const seedGps: Gps = { lat: 28.6139, lon: 77.209, label: "New Delhi, Delhi" };
+
+// Larger dataset for the Overview dashboard's chart + table (last 30 days).
+export const mockDashboardHistory: EvidenceRecord[] = generateDashboardHistory(30);
+
+// Seed a few demo records so History isn't empty on first visit.
 export const mockHistory: EvidenceRecord[] = [
   toRecord({
     success: true,

@@ -1,6 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -36,6 +35,7 @@ export default {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        "hero-subtitle": "hsl(var(--hero-subtitle))",
         // Semantic RESULT colours only — never used decoratively (PRD §7).
         positive: {
           DEFAULT: "hsl(var(--positive))",
@@ -60,8 +60,12 @@ export default {
         xl: "calc(var(--radius) + 4px)",
       },
       fontFamily: {
-        sans: ["'Plus Jakarta Sans'", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
+        sans: ["'Inter'", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
+        serif: ["'Instrument Serif'", "Georgia", "serif"],
+      },
+      letterSpacing: {
+        tightest: "-2px",
       },
       keyframes: {
         "fade-in": {

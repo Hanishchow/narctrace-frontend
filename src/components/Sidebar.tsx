@@ -1,18 +1,26 @@
-import { Camera, History as HistoryIcon, LogOut, ShieldCheck } from "lucide-react";
+import { Camera, History as HistoryIcon, LayoutGrid, LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "../lib/utils";
-import { ThemeToggle } from "./ThemeToggle";
 import type { Officer } from "../api/types";
 
 interface SidebarProps {
   officer: Officer;
-  screen: "start" | "capture" | "result" | "history";
+  screen: "overview" | "start" | "capture" | "result" | "history";
   demo: boolean;
+  onNavOverview: () => void;
   onNavStart: () => void;
   onNavHistory: () => void;
   onLogout: () => void;
 }
 
-export function Sidebar({ officer, screen, demo, onNavStart, onNavHistory, onLogout }: SidebarProps) {
+export function Sidebar({
+  officer,
+  screen,
+  demo,
+  onNavOverview,
+  onNavStart,
+  onNavHistory,
+  onLogout,
+}: SidebarProps) {
   const navItemClass = (active: boolean) =>
     cn(
       "flex min-h-[var(--tap-min)] items-center gap-2.5 rounded-md px-3 text-sm font-medium transition-colors",
@@ -20,13 +28,16 @@ export function Sidebar({ officer, screen, demo, onNavStart, onNavHistory, onLog
     );
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-border px-4 py-6 lg:flex">
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-muted/40 px-4 py-6 lg:flex">
       <div className="flex items-center gap-2 px-1">
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-accent-strong text-accent-strong-foreground">
           <ShieldCheck className="h-4.5 w-4.5" aria-hidden="true" strokeWidth={2.25} />
         </span>
         <span className="text-base font-bold tracking-tight">NarcTrace</span>
       </div>
+      <p className="mt-1 px-1 text-xs text-muted-foreground">
+        One clear <span className="font-serif italic">record</span>.
+      </p>
 
       {demo && (
         <div className="mt-4 rounded-md bg-accent-strong/10 px-3 py-2 text-xs font-medium text-accent-strong">
@@ -35,6 +46,10 @@ export function Sidebar({ officer, screen, demo, onNavStart, onNavHistory, onLog
       )}
 
       <nav className="mt-8 flex flex-col gap-1">
+        <button type="button" onClick={onNavOverview} className={navItemClass(screen === "overview")}>
+          <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden="true" />
+          Overview
+        </button>
         <button type="button" onClick={onNavStart} className={navItemClass(screen === "start" || screen === "capture" || screen === "result")}>
           <Camera className="h-4 w-4 shrink-0" aria-hidden="true" />
           New test
@@ -46,12 +61,9 @@ export function Sidebar({ officer, screen, demo, onNavStart, onNavHistory, onLog
       </nav>
 
       <div className="mt-auto flex flex-col gap-3 border-t border-border pt-4">
-        <div className="flex items-center justify-between gap-2 px-1">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{officer.name}</p>
-            <p className="mono truncate text-xs text-muted-foreground">{officer.badge_id}</p>
-          </div>
-          <ThemeToggle />
+        <div className="px-1">
+          <p className="truncate text-sm font-medium">{officer.name}</p>
+          <p className="mono truncate text-xs text-muted-foreground">{officer.badge_id}</p>
         </div>
         <button
           type="button"
