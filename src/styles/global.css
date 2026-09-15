@@ -1,0 +1,171 @@
+@import "./tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--fs-4);
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: var(--fw-bold);
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+/* Visible keyboard focus everywhere (WCAG AA, keyboard reachable). */
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.app-shell {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.app-main {
+  flex: 1;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.app-header__brand {
+  font-size: var(--fs-3);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.02em;
+}
+
+.app-header__officer {
+  font-size: var(--fs-5);
+  color: var(--color-text-muted);
+}
+
+.screen-title {
+  font-size: var(--fs-2);
+}
+
+.screen-subtitle {
+  font-size: var(--fs-5);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-4);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.text-sm {
+  font-size: var(--fs-5);
+}
+
+.mono {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+/* --- Banner (health / errors) --- */
+.banner {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--fs-5);
+  font-weight: var(--fw-medium);
+  text-align: center;
+}
+.banner--error {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+.banner--warn {
+  background: var(--color-warn-bg);
+  color: var(--color-warn-text);
+}
+
+/* Inline text button that inherits surrounding colour (no own hex). */
+.linkbtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: var(--tap-min);
+}
+
+/* --- Disclaimer (persistent) --- */
+.disclaimer {
+  background: var(--color-disclaimer-bg);
+  color: var(--color-disclaimer-text);
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--fs-5);
+  line-height: 1.4;
+}
+.disclaimer strong {
+  color: var(--color-text);
+}
