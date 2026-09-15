@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
+import { Check, History, MapPin, RefreshCw } from "lucide-react";
 import { getProfiles, ApiError } from "../api/client";
 import type { KitProfile } from "../api/types";
 import { acquireGpsFix } from "../lib/geo";
+import { useDemoMode } from "../lib/demoMode";
+import { MOCK_PROFILES } from "../lib/mock";
 import { Button } from "../components/Button";
+import { Skeleton } from "../components/Skeleton";
+import { cn } from "../lib/utils";
 import type { TestSession } from "../App";
 
 interface StartTestScreenProps {
@@ -17,6 +22,7 @@ type GpsState =
   | { status: "error"; message: string };
 
 export function StartTestScreen({ onProceed, onViewHistory }: StartTestScreenProps) {
+  const demo = useDemoMode();
   const [profiles, setProfiles] = useState<KitProfile[]>([]);
   const [profileId, setProfileId] = useState<string>("");
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -24,6 +30,12 @@ export function StartTestScreen({ onProceed, onViewHistory }: StartTestScreenPro
   const [gps, setGps] = useState<GpsState>({ status: "idle" });
 
   useEffect(() => {
+    if (demo) {
+      setProfiles(MOCK_PROFILES);
+      setProfileId(MOCK_PROFILES[0].profile_id);
+      setLoading(false);
+      return;
+    }
     let alive = true;
     getProfiles()
       .then((res) => {
@@ -43,7 +55,7 @@ export function StartTestScreen({ onProceed, onViewHistory }: StartTestScreenPro
     return () => {
       alive = false;
     };
-  }, []);
+  }, [demo]);
 
   const locate = async () => {
     setGps({ status: "locating" });
@@ -71,86 +83,119 @@ export function StartTestScreen({ onProceed, onViewHistory }: StartTestScreenPro
 
   return (
     <>
-      <div className="row" style={{ justifyContent: "space-between" }}>
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="screen-title">Start a test</h1>
-          <p className="screen-subtitle">Select a kit profile and capture location.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Start a test</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Select a kit profile and capture location.
+          </p>
         </div>
-        <Button variant="ghost" onClick={onViewHistory}>
+        <Button variant="ghost" onClick={onViewHistory} className="lg:hidden">
+          <History className="h-4 w-4" aria-hidden="true" />
           History
         </Button>
       </div>
 
-      <section className="stack">
-        <h2 className="text-sm" style={{ fontSize: "var(--fs-3)" }}>
-          1. Kit profile
-        </h2>
-        {loading && <p className="muted">Loading profiles…</p>}
-        {loadError && (
-          <p className="field__error" role="alert">
-            {loadError}
-          </p>
-        )}
-        {!loading && !loadError && profiles.length === 0 && (
-          <p className="muted">No kit profiles available.</p>
-        )}
-        <div className="stack">
-          {profiles.map((p) => (
-            <label key={p.profile_id} className="card" style={{ cursor: "pointer" }}>
-              <span className="row" style={{ alignItems: "flex-start" }}>
-                <input
-                  type="radio"
-                  name="profile"
-                  value={p.profile_id}
-                  checked={profileId === p.profile_id}
-                  onChange={() => setProfileId(p.profile_id)}
-                  style={{ marginTop: 4, width: 20, height: 20 }}
-                />
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <section className="flex flex-1 flex-col gap-3">
+          <h2 className="text-sm font-semibold text-muted-foreground">1. Kit profile</h2>
+          {loading && (
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-[70px] rounded-lg" />
+              <Skeleton className="h-[70px] rounded-lg" />
+            </div>
+          )}
+          {loadError && (
+            <p className="text-sm font-medium text-destructive" role="alert">
+              {loadError}
+            </p>
+          )}
+          {!loading && !loadError && profiles.length === 0 && (
+            <p className="text-sm text-muted-foreground">No kit profiles available.</p>
+          )}
+          <div className="flex flex-col gap-2">
+            {!loading && profiles.map((p) => {
+              const checked = profileId === p.profile_id;
+              return (
+                <label
+                  key={p.profile_id}
+                  className={cn(
+                    "flex cursor-pointer items-start justify-between gap-3 rounded-lg border bg-card p-4 transition-colors",
+                    checked ? "border-accent-strong" : "border-border hover:bg-accent",
+                  )}
+                >
+                  <span>
+                    <span className="font-medium">{p.name}</span>
+                    <br />
+                    <span className="mono text-xs text-muted-foreground">
+                      {p.profile_id} · v{p.version}
+                    </span>
+                  </span>
+                  <input
+                    type="radio"
+                    name="profile"
+                    value={p.profile_id}
+                    checked={checked}
+                    onChange={() => setProfileId(p.profile_id)}
+                    className="sr-only"
+                  />
+                  <span
+                    className={cn(
+                      "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                      checked ? "border-accent-strong bg-accent-strong" : "border-border",
+                    )}
+                    aria-hidden="true"
+                  >
+                    {checked && <Check className="h-3.5 w-3.5 text-accent-strong-foreground" strokeWidth={3} />}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="flex flex-1 flex-col gap-3">
+          <h2 className="text-sm font-semibold text-muted-foreground">2. Location</h2>
+          <div className="rounded-lg border border-border bg-card p-4">
+            {gps.status === "idle" && (
+              <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                GPS is optional but recommended for evidence traceability.
+              </p>
+            )}
+            {gps.status === "locating" && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <RefreshCw className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+                Acquiring GPS…
+              </p>
+            )}
+            {gps.status === "ok" && (
+              <p className="flex items-start gap-2 text-sm">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent-strong" aria-hidden="true" />
                 <span>
-                  <span style={{ fontWeight: 500 }}>{p.name}</span>
+                  {gps.label || "Location acquired"}
                   <br />
-                  <span className="text-sm muted mono">
-                    {p.profile_id} · v{p.version}
+                  <span className="mono text-xs text-muted-foreground">
+                    {gps.lat.toFixed(5)}, {gps.lon.toFixed(5)} (±{Math.round(gps.accuracy)}m)
                   </span>
                 </span>
-              </span>
-            </label>
-          ))}
-        </div>
-      </section>
-
-      <section className="stack">
-        <h2 style={{ fontSize: "var(--fs-3)" }}>2. Location</h2>
-        <div className="card">
-          {gps.status === "idle" && (
-            <p className="muted text-sm" style={{ marginTop: 0 }}>
-              GPS is optional but recommended for evidence traceability.
-            </p>
-          )}
-          {gps.status === "locating" && <p className="muted">Acquiring GPS…</p>}
-          {gps.status === "ok" && (
-            <p style={{ margin: 0 }}>
-              {gps.label || "Location acquired"}
-              <br />
-              <span className="text-sm muted mono">
-                {gps.lat.toFixed(5)}, {gps.lon.toFixed(5)} (±{Math.round(gps.accuracy)}m)
-              </span>
-            </p>
-          )}
-          {gps.status === "error" && (
-            <p className="field__error" role="alert" style={{ margin: 0 }}>
-              {gps.message}
-            </p>
-          )}
-          <div style={{ marginTop: "var(--space-3)" }}>
-            <Button variant="secondary" onClick={locate} disabled={gps.status === "locating"}>
-              {gps.status === "ok" ? "Re-acquire location" : "Acquire GPS location"}
-            </Button>
+              </p>
+            )}
+            {gps.status === "error" && (
+              <p className="text-sm font-medium text-destructive" role="alert">
+                {gps.message}
+              </p>
+            )}
+            <div className="mt-3">
+              <Button variant="secondary" onClick={locate} disabled={gps.status === "locating"}>
+                {gps.status === "ok" ? "Re-acquire location" : "Acquire GPS location"}
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <Button block onClick={proceed} disabled={!profileId}>
+      <Button block onClick={proceed} disabled={!profileId} className="lg:w-auto lg:self-start lg:px-8">
         Continue to capture
       </Button>
     </>

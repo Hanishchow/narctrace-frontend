@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import type { ColorMetrics, EvidenceMeta, Gps, QualityTelemetry } from "../api/types";
 import { fetchEvidenceImage } from "../api/client";
-import "./EvidenceCard.css";
+import { cn } from "../lib/utils";
+import { NumberTicker } from "./NumberTicker";
 
 interface EvidenceCardProps {
   testId: string;
@@ -15,9 +16,9 @@ interface EvidenceCardProps {
 
 function Item({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="evidence-card__item">
-      <dt className="evidence-card__label">{label}</dt>
-      <dd className="evidence-card__value">{value}</dd>
+    <div className="flex flex-col gap-0.5 py-2.5">
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="text-sm text-foreground">{value}</dd>
     </div>
   );
 }
@@ -56,24 +57,24 @@ export function EvidenceCard({
   }, [imageUrl]);
 
   return (
-    <div className="card evidence-card">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
       {objectUrl && (
         <img
-          className="evidence-card__image"
+          className="aspect-video w-full object-cover"
           src={objectUrl}
           alt={`Captured reaction for test ${testId}`}
         />
       )}
-      <dl className="evidence-card__grid">
+      <dl className={cn("grid grid-cols-2 gap-x-4 divide-y divide-border p-4 [&>*:nth-last-child(-n+2)]:pb-0")}>
         <Item label="Test ID" value={<span className="mono">{testId}</span>} />
         {profileName && <Item label="Kit profile" value={profileName} />}
         {operatorId && <Item label="Operator" value={<span className="mono">{operatorId}</span>} />}
         <Item
           label="Colour"
           value={
-            <span className="evidence-card__swatch-wrap">
+            <span className="flex items-center gap-2">
               <span
-                className="evidence-card__swatch"
+                className="h-4 w-4 shrink-0 rounded-full border border-border"
                 style={{ backgroundColor: color.hex }}
                 aria-hidden="true"
               />
@@ -81,21 +82,37 @@ export function EvidenceCard({
             </span>
           }
         />
-        <Item label="ΔE positive" value={color.delta_e_positive?.toFixed(1)} />
-        <Item label="ΔE negative" value={color.delta_e_negative?.toFixed(1)} />
         <Item
-          label="Quality gate"
-          value={quality.passed ? "Passed" : "Failed"}
+          label="ΔE positive"
+          value={
+            typeof color.delta_e_positive === "number" ? (
+              <NumberTicker value={color.delta_e_positive} />
+            ) : undefined
+          }
         />
-        <Item label="Blur score" value={quality.blur_score?.toFixed(1)} />
+        <Item
+          label="ΔE negative"
+          value={
+            typeof color.delta_e_negative === "number" ? (
+              <NumberTicker value={color.delta_e_negative} />
+            ) : undefined
+          }
+        />
+        <Item label="Quality gate" value={quality.passed ? "Passed" : "Failed"} />
+        <Item
+          label="Blur score"
+          value={
+            typeof quality.blur_score === "number" ? (
+              <NumberTicker value={quality.blur_score} />
+            ) : undefined
+          }
+        />
         <Item label="Exposure" value={quality.exposure_status} />
         <Item label="Glare" value={quality.glare ? "Detected" : "None"} />
         {evidence?.timestamp_utc && (
           <Item label="Timestamp (UTC)" value={<span className="mono">{evidence.timestamp_utc}</span>} />
         )}
-        {evidence?.timestamp_local && (
-          <Item label="Timestamp (local)" value={evidence.timestamp_local} />
-        )}
+        {evidence?.timestamp_local && <Item label="Timestamp (local)" value={evidence.timestamp_local} />}
         {gps && (
           <Item
             label="Location"
@@ -103,7 +120,7 @@ export function EvidenceCard({
               <>
                 {gps.label || "Unknown"}
                 <br />
-                <span className="mono text-sm">
+                <span className="mono text-xs text-muted-foreground">
                   {gps.lat.toFixed(5)}, {gps.lon.toFixed(5)}
                 </span>
               </>
@@ -113,7 +130,7 @@ export function EvidenceCard({
         {evidence?.image_sha256 && (
           <Item
             label="Image SHA-256"
-            value={<span className="mono evidence-card__hash">{evidence.image_sha256}</span>}
+            value={<span className="mono break-all text-xs">{evidence.image_sha256}</span>}
           />
         )}
       </dl>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AlertTriangle, LogOut, ShieldCheck } from "lucide-react";
 import { health, getToken, setToken } from "./api/client";
 import type {
   AnalysisResult,
@@ -7,6 +8,12 @@ import type {
   Officer,
 } from "./api/types";
 import { Disclaimer } from "./components/Disclaimer";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { Sidebar } from "./components/Sidebar";
+import { AppToaster } from "./components/AppToaster";
+import { ThemeProvider } from "./lib/theme";
+import { DemoModeProvider } from "./lib/demoMode";
+import { cn } from "./lib/utils";
 import { LoginScreen } from "./screens/LoginScreen";
 import { StartTestScreen } from "./screens/StartTestScreen";
 import { CaptureScreen } from "./screens/CaptureScreen";
@@ -25,6 +32,7 @@ export interface TestSession {
 
 export function App() {
   const [officer, setOfficer] = useState<Officer | null>(null);
+  const [demo, setDemo] = useState(false);
   const [screen, setScreen] = useState<Screen>("start");
   const [backend, setBackend] = useState<Backend>("checking");
   const [session, setSession] = useState<TestSession | null>(null);
@@ -51,6 +59,7 @@ export function App() {
   const handleLogout = () => {
     setToken(null);
     setOfficer(null);
+    setDemo(false);
     setSession(null);
     setResult(null);
     setScreen("start");
@@ -58,6 +67,13 @@ export function App() {
 
   const handleLogin = (o: Officer) => {
     setOfficer(o);
+    setDemo(false);
+    setScreen("start");
+  };
+
+  const handleDemoLogin = (o: Officer) => {
+    setOfficer(o);
+    setDemo(true);
     setScreen("start");
   };
 
@@ -72,71 +88,129 @@ export function App() {
   };
 
   const banner =
-    backend === "unreachable" ? (
-      <div className="banner banner--error" role="alert">
-        Backend unreachable — start the NarcTrace backend on port 8000, then{" "}
-        <button type="button" className="linkbtn" onClick={pingHealth}>
-          retry
-        </button>
-        .
+    backend === "unreachable" && !demo ? (
+      <div
+        role="alert"
+        className="flex items-center justify-center gap-2 bg-destructive px-4 py-2.5 text-center text-sm font-medium text-destructive-foreground"
+      >
+        <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <span>
+          Backend unreachable — start the NarcTrace backend on port 8000, then{" "}
+          <button
+            type="button"
+            onClick={pingHealth}
+            className="min-h-0 underline underline-offset-2 hover:opacity-80"
+          >
+            retry
+          </button>
+          .
+        </span>
       </div>
     ) : null;
 
   if (!officer) {
     return (
-      <div className="app-shell">
-        {banner}
-        <LoginScreen onLogin={handleLogin} backendReady={backend !== "unreachable"} />
-        <Disclaimer />
-      </div>
+      <ThemeProvider>
+        <div className="relative flex min-h-screen flex-col bg-background">
+          {banner}
+          <div className="absolute right-4 top-4 z-10">
+            <ThemeToggle />
+          </div>
+          <LoginScreen
+            onLogin={handleLogin}
+            onDemoLogin={handleDemoLogin}
+            backendReady={backend !== "unreachable"}
+          />
+          <Disclaimer />
+        </div>
+        <AppToaster />
+      </ThemeProvider>
     );
   }
 
+  const goStart = () => setScreen("start");
+  const goHistory = () => setScreen("history");
+
   return (
-    <div className="app-shell">
-      {banner}
-      <header className="app-header">
-        <span className="app-header__brand">NarcTrace</span>
-        <span className="app-header__officer">
-          {officer.name} · {officer.badge_id}{" "}
-          <button type="button" className="linkbtn" onClick={handleLogout}>
-            Sign out
-          </button>
-        </span>
-      </header>
+    <ThemeProvider>
+      <DemoModeProvider demo={demo}>
+        <div className="flex min-h-screen flex-col bg-background lg:flex-row">
+          <Sidebar
+            officer={officer}
+            screen={screen}
+            demo={demo}
+            onNavStart={goStart}
+            onNavHistory={goHistory}
+            onLogout={handleLogout}
+          />
 
-      <main className="app-main">
-        {screen === "start" && (
-          <StartTestScreen
-            onProceed={startCapture}
-            onViewHistory={() => setScreen("history")}
-          />
-        )}
-        {screen === "capture" && session && (
-          <CaptureScreen
-            session={session}
-            operatorId={officer.badge_id}
-            onCancel={() => setScreen("start")}
-            onResult={showResult}
-          />
-        )}
-        {screen === "result" && result && (
-          <ResultScreen
-            result={result}
-            onNewTest={() => {
-              setResult(null);
-              setSession(null);
-              setScreen("start");
-            }}
-            onViewHistory={() => setScreen("history")}
-          />
-        )}
-        {screen === "history" && (
-          <HistoryScreen onBack={() => setScreen("start")} />
-        )}
-      </main>
+          <div className="flex min-w-0 flex-1 flex-col">
+            {banner}
+            {demo && (
+              <div className="flex items-center justify-center gap-2 border-b border-border bg-accent-strong/10 px-4 py-2 text-center text-xs font-medium text-accent-strong lg:hidden">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                Demo mode — using simulated data, no backend connected.
+              </div>
+            )}
+            <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3 lg:hidden">
+              <span className="text-base font-bold tracking-tight">NarcTrace</span>
+              <span className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="hidden sm:inline">
+                  {officer.name} · <span className="mono">{officer.badge_id}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex min-h-0 items-center gap-1 font-medium text-foreground transition-opacity hover:opacity-70"
+                >
+                  <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="hidden sm:inline">Sign out</span>
+                </button>
+                <ThemeToggle />
+              </span>
+            </header>
 
-      <Disclaimer />
-    </div>
+            <main className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-10 lg:py-10">
+              <div
+                className={cn(
+                  "mx-auto flex w-full max-w-lg flex-1 flex-col gap-6",
+                  screen === "history" ? "lg:max-w-3xl" : "lg:max-w-2xl",
+                )}
+              >
+                {screen === "start" && (
+                  <StartTestScreen
+                    onProceed={startCapture}
+                    onViewHistory={goHistory}
+                  />
+                )}
+                {screen === "capture" && session && (
+                  <CaptureScreen
+                    session={session}
+                    operatorId={officer.badge_id}
+                    onCancel={goStart}
+                    onResult={showResult}
+                  />
+                )}
+                {screen === "result" && result && (
+                  <ResultScreen
+                    result={result}
+                    onNewTest={() => {
+                      setResult(null);
+                      setSession(null);
+                      setScreen("start");
+                    }}
+                    onViewHistory={goHistory}
+                  />
+                )}
+                {screen === "history" && <HistoryScreen onBack={goStart} />}
+              </div>
+            </main>
+
+            <Disclaimer />
+          </div>
+        </div>
+        <AppToaster />
+      </DemoModeProvider>
+    </ThemeProvider>
   );
 }

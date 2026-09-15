@@ -1,77 +1,107 @@
 /*
- * NarcTrace design tokens — PRD §7 (v1, deliberately simple).
- * ALL colour hexes live here. No component hard-codes a colour.
- * The later pro redesign only swaps these values.
+ * NarcTrace design tokens. Monochrome base + one precise accent — no
+ * gradients, no glow. All colours as HSL triples consumed by
+ * tailwind.config.js via hsl(var(--x)). No component hard-codes a colour —
+ * only this file (light) and the `.dark` block (dark theme, default) do.
  */
 :root {
-  /* --- Neutral base --- */
-  --color-bg: #ffffff;
-  --color-surface: #ffffff;
-  --color-surface-alt: #f4f5f7;
-  --color-text: #111418;
-  --color-text-muted: #5b616e;
-  --color-border: #d6d9de;
-  --color-focus-ring: #1a56db;
-  --color-accent: #1a56db; /* neutral action colour (not a result hue) */
-  --color-accent-hover: #14439f;
-  --color-accent-text: #ffffff;
+  --background: 40 20% 97%;
+  --foreground: 220 15% 10%;
 
-  /* --- Semantic RESULT colours only (never decorative elsewhere) --- */
-  --color-positive: #0f7b4e;
-  --color-negative: #b42318;
-  --color-inconclusive: #b54708;
-  --color-on-result: #ffffff;
+  --card: 0 0% 100%;
+  --card-foreground: 220 15% 10%;
 
-  /* --- Status / banner --- */
-  --color-warn-bg: #fef3c7;
-  --color-warn-text: #7a4a08;
-  --color-error-bg: #fde8e8;
-  --color-error-text: #8a1c14;
-  --color-disclaimer-bg: #f4f5f7;
-  --color-disclaimer-text: #3b3f47;
+  --muted: 40 12% 93%;
+  --muted-foreground: 220 8% 40%;
 
-  /* --- Type scale (PRD §7): 32 / 24 / 18 / 16 / 14 --- */
-  --font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-  --fs-1: 32px;
-  --fs-2: 24px;
-  --fs-3: 18px;
-  --fs-4: 16px;
-  --fs-5: 14px;
-  --fw-regular: 400;
-  --fw-medium: 500;
-  --fw-bold: 700;
+  --border: 220 10% 87%;
+  --input: 220 10% 87%;
+  --ring: 38 92% 50%;
 
-  /* --- Spacing (4px base grid) --- */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
+  --primary: 220 15% 10%;
+  --primary-foreground: 40 20% 97%;
 
-  /* --- Radius --- */
-  --radius-card: 8px;
-  --radius-control: 6px;
+  --accent-strong: 38 92% 50%;
+  --accent-strong-foreground: 220 20% 8%;
 
-  /* --- Elevation (one soft shadow only) --- */
-  --shadow-1: 0 1px 3px rgba(17, 20, 24, 0.12);
+  --secondary: 40 12% 93%;
+  --secondary-foreground: 220 15% 10%;
 
-  /* --- Camera --- */
-  --color-camera-bg: #111418;
-  --color-camera-guide: #ffffff;
-  --color-camera-status: #f4f5f7;
-  --color-camera-scrim: rgba(17, 20, 24, 0.7);
+  --accent: 40 12% 93%;
+  --accent-foreground: 220 15% 10%;
 
-  /* --- Targets --- */
+  --destructive: 4 70% 42%;
+  --destructive-foreground: 40 20% 97%;
+
+  --positive: 152 55% 24%;
+  --positive-foreground: 40 20% 97%;
+  --positive-bg: 152 30% 92%;
+
+  --negative: 4 70% 40%;
+  --negative-foreground: 40 20% 97%;
+  --negative-bg: 4 55% 94%;
+
+  --inconclusive: 32 75% 34%;
+  --inconclusive-foreground: 40 20% 97%;
+  --inconclusive-bg: 38 60% 91%;
+
+  --radius: 0.5rem;
+  --camera-bg: 220 20% 6%;
+  --camera-scrim: 220 20% 4%;
   --tap-min: 44px;
+}
 
-  /* --- Motion --- */
-  --motion-fast: 150ms;
-  --ease: ease;
+.dark {
+  --background: 220 18% 7%;
+  --foreground: 40 15% 95%;
+
+  --card: 220 16% 10%;
+  --card-foreground: 40 15% 95%;
+
+  --muted: 220 14% 13%;
+  --muted-foreground: 220 8% 60%;
+
+  --border: 220 12% 19%;
+  --input: 220 12% 19%;
+  --ring: 38 92% 55%;
+
+  --primary: 40 15% 95%;
+  --primary-foreground: 220 18% 9%;
+
+  --accent-strong: 38 92% 55%;
+  --accent-strong-foreground: 220 20% 8%;
+
+  --secondary: 220 14% 14%;
+  --secondary-foreground: 40 15% 95%;
+
+  --accent: 220 14% 14%;
+  --accent-foreground: 40 15% 95%;
+
+  --destructive: 4 65% 52%;
+  --destructive-foreground: 220 18% 9%;
+
+  --positive: 152 50% 45%;
+  --positive-foreground: 220 18% 9%;
+  --positive-bg: 152 35% 13%;
+
+  --negative: 4 65% 55%;
+  --negative-foreground: 220 18% 9%;
+  --negative-bg: 4 45% 15%;
+
+  --inconclusive: 34 88% 55%;
+  --inconclusive-foreground: 220 18% 9%;
+  --inconclusive-bg: 34 55% 14%;
+
+  --camera-bg: 220 20% 4%;
+  --camera-scrim: 220 20% 3%;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root {
-    --motion-fast: 0ms;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -1,76 +1,39 @@
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import type { ResultClass } from "../api/types";
-import "./ResultBadge.css";
+import { cn } from "../lib/utils";
 
-// Result must be unmistakable: large 32px type + colour + icon + text.
+// Result must be unmistakable: large type + colour + icon + text.
 // Colour is NEVER the sole signal (WCAG / PRD §7).
 
-const ICON: Record<ResultClass, string> = {
-  Positive: "M20 6 9 17l-5-5", // check
-  Negative: "M18 6 6 18M6 6l12 12", // cross
-  Inconclusive: "M12 9v4m0 4h.01", // alert (dashes handled below)
+const STYLES: Record<ResultClass, { bg: string; text: string; border: string }> = {
+  Positive: { bg: "bg-positive-bg", text: "text-positive", border: "border-positive/30" },
+  Negative: { bg: "bg-negative-bg", text: "text-negative", border: "border-negative/30" },
+  Inconclusive: { bg: "bg-inconclusive-bg", text: "text-inconclusive", border: "border-inconclusive/30" },
 };
 
-function ResultIcon({ result }: { result: ResultClass }) {
-  if (result === "Inconclusive") {
-    return (
-      <svg
-        className="result-badge__icon"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path
-          d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M12 9v4m0 4h.01"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
-  }
-  return (
-    <svg
-      className="result-badge__icon"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      focusable="false"
-    >
-      {result === "Positive" && (
-        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
-      )}
-      {result === "Negative" && (
-        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
-      )}
-      <path
-        d={ICON[result]}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+const ICONS: Record<ResultClass, typeof CheckCircle2> = {
+  Positive: CheckCircle2,
+  Negative: XCircle,
+  Inconclusive: AlertTriangle,
+};
 
 export function ResultBadge({ result }: { result: ResultClass }) {
-  const modifier = result.toLowerCase();
+  const s = STYLES[result];
+  const Icon = ICONS[result];
   return (
     <div
-      className={`result-badge result-badge--${modifier}`}
       role="status"
       aria-label={`Test result: ${result}`}
+      className={cn(
+        "flex items-center justify-center gap-3 rounded-lg border px-6 py-8 animate-fade-in",
+        s.bg,
+        s.border,
+      )}
     >
-      <ResultIcon result={result} />
-      <span className="result-badge__text">{result}</span>
+      <Icon className={cn("h-9 w-9 shrink-0", s.text)} strokeWidth={2.25} aria-hidden="true" />
+      <span className={cn("text-[32px] font-bold leading-none tracking-tight", s.text)}>
+        {result}
+      </span>
     </div>
   );
 }

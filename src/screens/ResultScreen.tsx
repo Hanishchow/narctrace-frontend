@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react";
 import type { AnalysisResult } from "../api/types";
 import { ResultBadge } from "../components/ResultBadge";
 import { EvidenceCard } from "../components/EvidenceCard";
@@ -13,14 +14,18 @@ export function ResultScreen({ result, onNewTest, onViewHistory }: ResultScreenP
   return (
     <>
       <div>
-        <h1 className="screen-title">Result</h1>
-        <p className="screen-subtitle mono">{result.test_id}</p>
+        <h1 className="text-2xl font-bold tracking-tight">Result</h1>
+        <p className="mono mt-1 text-sm text-muted-foreground">{result.test_id}</p>
       </div>
 
       <ResultBadge result={result.result} />
 
       {!result.quality.passed && (
-        <p className="banner banner--warn" role="status" style={{ borderRadius: "var(--radius-control)" }}>
+        <p
+          role="status"
+          className="flex items-center gap-2 rounded-lg bg-inconclusive-bg px-4 py-3 text-sm font-medium text-inconclusive"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
           Quality gate failed — result may be unreliable. Consider re-capturing.
         </p>
       )}
@@ -35,7 +40,7 @@ export function ResultScreen({ result, onNewTest, onViewHistory }: ResultScreenP
         imageUrl={result.evidence.image_url}
       />
 
-      <div className="stack">
+      <div className="flex flex-col gap-3">
         <Button block onClick={onNewTest}>
           Start a new test
         </Button>

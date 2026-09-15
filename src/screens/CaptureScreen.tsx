@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { analyze, ApiError } from "../api/client";
 import type { AnalysisResult } from "../api/types";
+import { useDemoMode } from "../lib/demoMode";
+import { mockAnalyze } from "../lib/mock";
 import { CameraFrame } from "../components/CameraFrame";
 import { Button } from "../components/Button";
 import type { TestSession } from "../App";
@@ -20,6 +23,7 @@ export function CaptureScreen({
   onCancel,
   onResult,
 }: CaptureScreenProps) {
+  const demo = useDemoMode();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [phase, setPhase] = useState<Phase>("starting");
@@ -65,6 +69,36 @@ export function CaptureScreen({
       stopStream();
     };
   }, []);
+
+  // Demo-only: synthesize a placeholder capture (no camera needed) so the
+  // flow is never blocked when no device camera is available.
+  const simulateCapture = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = "#3a2f52";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#6d28d9";
+    ctx.beginPath();
+    ctx.ellipse(canvas.width / 2, canvas.height / 2, 140, 100, 0, 0, Math.PI * 2);
+    ctx.fill();
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        setCaptured((prev) => {
+          if (prev) URL.revokeObjectURL(prev.url);
+          return { blob, url };
+        });
+        setPhase("captured");
+        stopStream();
+      },
+      "image/jpeg",
+      0.92,
+    );
+  };
 
   const capture = () => {
     const video = videoRef.current;
@@ -121,11 +155,15 @@ export function CaptureScreen({
     setPhase("analyzing");
     setError(null);
     try {
-      const result = await analyze({
+      const payload = {
         image: captured.blob,
         profile_id: session.profile.profile_id,
         operator_id: operatorId,
         gps: session.gps,
+      };
+      const result = demo ? await mockAnalyze(payload) : await analyze(payload);
+      toast.success(`Analysis complete — ${result.result}`, {
+        description: result.test_id,
       });
       onResult(result);
     } catch (err) {
@@ -139,8 +177,10 @@ export function CaptureScreen({
         );
       } else if (err instanceof ApiError) {
         setError(`Analysis failed: ${err.message}`);
+        toast.error("Analysis failed", { description: err.message });
       } else {
         setError("Could not reach the backend to analyze the image.");
+        toast.error("Could not reach the backend");
       }
     }
   };
@@ -148,8 +188,8 @@ export function CaptureScreen({
   return (
     <>
       <div>
-        <h1 className="screen-title">Capture reaction</h1>
-        <p className="screen-subtitle">
+        <h1 className="text-2xl font-bold tracking-tight">Capture reaction</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           {session.profile.name} · <span className="mono">{session.profile.profile_id}</span>
         </p>
       </div>
@@ -158,26 +198,27 @@ export function CaptureScreen({
         <img
           src={captured.url}
           alt="Captured reaction preview"
-          style={{
-            width: "100%",
-            borderRadius: "var(--radius-card)",
-            border: "1px solid var(--color-border)",
-          }}
+          className="w-full rounded-lg border border-border"
         />
       ) : (
         <CameraFrame ref={videoRef} status={status} active={phase === "live"} />
       )}
 
       {error && (
-        <p className="field__error" role="alert">
+        <p className="text-sm font-medium text-destructive" role="alert">
           {error}
         </p>
       )}
 
-      <div className="stack">
+      <div className="flex flex-col gap-3">
         {phase === "live" && (
           <Button block onClick={capture}>
             Capture image
+          </Button>
+        )}
+        {demo && (phase === "live" || phase === "starting") && (
+          <Button variant="secondary" block onClick={simulateCapture}>
+            Simulate capture (demo)
           </Button>
         )}
         {(phase === "captured" || phase === "analyzing") && (
