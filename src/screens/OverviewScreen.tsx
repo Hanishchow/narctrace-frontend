@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Camera, CheckCircle2, ClipboardList, XCircle } from "lucide-react";
-import { getAnalyticsSummary, ApiError } from "../api/client";
+import { getAnalyticsSummary, getHistory, ApiError } from "../api/client";
 import type { AnalyticsSummary, EvidenceRecord } from "../api/types";
 import { useDemoMode } from "../lib/demoMode";
 import { mockDashboardHistory } from "../lib/mock";
@@ -21,55 +21,10 @@ function trendPercent(current: number, previous: number): number {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-function analyticsToRecords(summary: AnalyticsSummary): EvidenceRecord[] {
-  const records: EvidenceRecord[] = [];
-  const operators = ["FIELD-OP-01", "FIELD-OP-02", "FIELD-OP-03"];
-  for (const day of summary.by_day) {
-    const positiveCount = day.positive;
-    const negativeCount = day.count - day.positive;
-    for (let i = 0; i < positiveCount; i++) {
-      records.push({
-        id: `analytics-${day.date}-${i}-pos`,
-        test_id: `FT-${day.date}-${i}-pos`,
-        operator_id: operators[i % operators.length],
-        result: "Positive",
-        profile_id: "SIM-PROFILE-ALPHA",
-        timestamp_utc: `${day.date}T08:00:00Z`,
-        timestamp_local: `${day.date} 08:00:00`,
-        gps: null,
-        color: { hex: "#6d28d9", lab: [52.3, 24.1, -38.7], delta_e_positive: 2.8, delta_e_negative: 38.4 },
-        quality: { passed: true, blur_score: 118, exposure_status: "normal", glare: false },
-        image_sha256: "",
-        image_path: "",
-        image_url: "",
-        created_at: `${day.date}T08:00:00Z`,
-      });
-    }
-    for (let i = 0; i < negativeCount; i++) {
-      records.push({
-        id: `analytics-${day.date}-${i}-neg`,
-        test_id: `FT-${day.date}-${i}-neg`,
-        operator_id: operators[i % operators.length],
-        result: "Negative",
-        profile_id: "SIM-PROFILE-BETA",
-        timestamp_utc: `${day.date}T09:00:00Z`,
-        timestamp_local: `${day.date} 09:00:00`,
-        gps: null,
-        color: { hex: "#c7c2ba", lab: [70, 2, -3], delta_e_positive: 41.2, delta_e_negative: 3.1 },
-        quality: { passed: true, blur_score: 140, exposure_status: "normal", glare: false },
-        image_sha256: "",
-        image_path: "",
-        image_url: "",
-        created_at: `${day.date}T09:00:00Z`,
-      });
-    }
-  }
-  return records.sort((a, b) => a.timestamp_utc.localeCompare(b.timestamp_utc));
-}
-
 export function OverviewScreen({ officerName, onStartTest, onViewHistory }: OverviewScreenProps) {
   const demo = useDemoMode();
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
+  const [records, setRecords] = useState<EvidenceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,26 +34,21 @@ export function OverviewScreen({ officerName, onStartTest, onViewHistory }: Over
       return;
     }
     let alive = true;
-    getAnalyticsSummary()
-      .then((res) => {
+    Promise.all([getAnalyticsSummary(), getHistory({})])
+      .then(([analytics, history]) => {
         if (!alive) return;
-        setSummary(res);
+        setSummary(analytics);
+        setRecords(history.records);
       })
       .catch((err) => {
         if (!alive) return;
-        setError(err instanceof ApiError ? err.message : "Could not load analytics summary.");
+        setError(err instanceof ApiError ? err.message : "Could not load overview data.");
       })
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
   }, [demo]);
-
-  const records = useMemo<EvidenceRecord[]>(() => {
-    if (demo) return mockDashboardHistory;
-    if (!summary) return [];
-    return analyticsToRecords(summary);
-  }, [demo, summary]);
 
   const stats = useMemo(() => {
     if (!summary) return null;
@@ -127,6 +77,15 @@ export function OverviewScreen({ officerName, onStartTest, onViewHistory }: Over
       inconclusiveTrend: 0,
     };
   }, [summary]);
+
+  const chartData = useMemo(() => {
+    if (demo) return mockDashboardHistory.map((r) => ({
+      date: r.timestamp_utc.slice(0, 10),
+      count: 1,
+      positive: r.result === "Positive" ? 1 : 0,
+    }));
+    return summary?.by_day ?? [];
+  }, [demo, summary]);
 
   return (
     <>
@@ -196,7 +155,7 @@ export function OverviewScreen({ officerName, onStartTest, onViewHistory }: Over
       {loading ? (
         <Skeleton className="h-[300px] rounded-lg" />
       ) : (
-        <ActivityChart records={records} />
+        <ActivityChart data={chartData} />
       )}
 
       <section className="flex flex-col gap-3">

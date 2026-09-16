@@ -8,10 +8,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { EvidenceRecord } from "../../api/types";
 
 interface ActivityChartProps {
-  records: EvidenceRecord[];
+  data: { date: string; count: number; positive: number }[];
 }
 
 interface DayBucket {
@@ -48,26 +47,16 @@ function CustomTooltip({
   );
 }
 
-export function ActivityChart({ records }: ActivityChartProps) {
-  const data = useMemo<DayBucket[]>(() => {
-    const buckets = new Map<string, DayBucket>();
-    for (const rec of records) {
-      const d = new Date(rec.timestamp_utc);
-      const key = d.toISOString().slice(0, 10);
-      if (!buckets.has(key)) {
-        buckets.set(key, {
-          date: key,
-          label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-          Positive: 0,
-          Negative: 0,
-          Inconclusive: 0,
-        });
-      }
-      const bucket = buckets.get(key)!;
-      bucket[rec.result] += 1;
-    }
-    return Array.from(buckets.values()).sort((a, b) => a.date.localeCompare(b.date));
-  }, [records]);
+export function ActivityChart({ data }: ActivityChartProps) {
+  const chartData = useMemo<DayBucket[]>(() => {
+    return data.map((d) => ({
+      date: d.date,
+      label: new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      Positive: d.positive,
+      Negative: d.count - d.positive,
+      Inconclusive: 0,
+    }));
+  }, [data]);
 
   return (
     <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
@@ -77,7 +66,7 @@ export function ActivityChart({ records }: ActivityChartProps) {
       </div>
       <div className="h-[240px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="fillPositive" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(var(--positive))" stopOpacity={0.35} />
