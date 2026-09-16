@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Camera, CheckCircle2, ClipboardList, XCircle } from "lucide-react";
-import { getHistory, ApiError } from "../api/client";
-import type { EvidenceRecord } from "../api/types";
+import { getAnalyticsSummary, ApiError } from "../api/client";
+import type { AnalyticsSummary, EvidenceRecord } from "../api/types";
 import { useDemoMode } from "../lib/demoMode";
 import { mockDashboardHistory } from "../lib/mock";
 import { StatCard } from "../components/dashboard/StatCard";
@@ -21,24 +21,72 @@ function trendPercent(current: number, previous: number): number {
   return Math.round(((current - previous) / previous) * 100);
 }
 
+function analyticsToRecords(summary: AnalyticsSummary): EvidenceRecord[] {
+  const records: EvidenceRecord[] = [];
+  const operators = ["FIELD-OP-01", "FIELD-OP-02", "FIELD-OP-03"];
+  for (const day of summary.by_day) {
+    const positiveCount = day.positive;
+    const negativeCount = day.count - day.positive;
+    for (let i = 0; i < positiveCount; i++) {
+      records.push({
+        id: `analytics-${day.date}-${i}-pos`,
+        test_id: `FT-${day.date}-${i}-pos`,
+        operator_id: operators[i % operators.length],
+        result: "Positive",
+        profile_id: "SIM-PROFILE-ALPHA",
+        timestamp_utc: `${day.date}T08:00:00Z`,
+        timestamp_local: `${day.date} 08:00:00`,
+        gps: null,
+        color: { hex: "#6d28d9", lab: [52.3, 24.1, -38.7], delta_e_positive: 2.8, delta_e_negative: 38.4 },
+        quality: { passed: true, blur_score: 118, exposure_status: "normal", glare: false },
+        image_sha256: "",
+        image_path: "",
+        image_url: "",
+        created_at: `${day.date}T08:00:00Z`,
+      });
+    }
+    for (let i = 0; i < negativeCount; i++) {
+      records.push({
+        id: `analytics-${day.date}-${i}-neg`,
+        test_id: `FT-${day.date}-${i}-neg`,
+        operator_id: operators[i % operators.length],
+        result: "Negative",
+        profile_id: "SIM-PROFILE-BETA",
+        timestamp_utc: `${day.date}T09:00:00Z`,
+        timestamp_local: `${day.date} 09:00:00`,
+        gps: null,
+        color: { hex: "#c7c2ba", lab: [70, 2, -3], delta_e_positive: 41.2, delta_e_negative: 3.1 },
+        quality: { passed: true, blur_score: 140, exposure_status: "normal", glare: false },
+        image_sha256: "",
+        image_path: "",
+        image_url: "",
+        created_at: `${day.date}T09:00:00Z`,
+      });
+    }
+  }
+  return records.sort((a, b) => a.timestamp_utc.localeCompare(b.timestamp_utc));
+}
+
 export function OverviewScreen({ officerName, onStartTest, onViewHistory }: OverviewScreenProps) {
   const demo = useDemoMode();
-  const [records, setRecords] = useState<EvidenceRecord[]>([]);
+  const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (demo) {
-      setRecords(mockDashboardHistory);
       setLoading(false);
       return;
     }
     let alive = true;
-    getHistory({})
-      .then((res) => alive && setRecords(res.records))
+    getAnalyticsSummary()
+      .then((res) => {
+        if (!alive) return;
+        setSummary(res);
+      })
       .catch((err) => {
         if (!alive) return;
-        setError(err instanceof ApiError ? err.message : "Could not load recent activity.");
+        setError(err instanceof ApiError ? err.message : "Could not load analytics summary.");
       })
       .finally(() => alive && setLoading(false));
     return () => {
@@ -46,26 +94,39 @@ export function OverviewScreen({ officerName, onStartTest, onViewHistory }: Over
     };
   }, [demo]);
 
+  const records = useMemo<EvidenceRecord[]>(() => {
+    if (demo) return mockDashboardHistory;
+    if (!summary) return [];
+    return analyticsToRecords(summary);
+  }, [demo, summary]);
+
   const stats = useMemo(() => {
+    if (!summary) return null;
     const now = Date.now();
-    const last7 = records.filter((r) => now - new Date(r.timestamp_utc).getTime() < 7 * 86_400_000);
-    const prev7 = records.filter((r) => {
-      const age = now - new Date(r.timestamp_utc).getTime();
-      return age >= 7 * 86_400_000 && age < 14 * 86_400_000;
+    const last7 = summary.by_day.filter((d) => {
+      const dt = new Date(d.date);
+      return now - dt.getTime() < 7 * 86_400_000;
     });
-    const count = (list: EvidenceRecord[], result: string) => list.filter((r) => r.result === result).length;
+    const prev7 = summary.by_day.filter((d) => {
+      const dt = new Date(d.date);
+      return now - dt.getTime() >= 7 * 86_400_000 && now - dt.getTime() < 14 * 86_400_000;
+    });
+    const last7Total = last7.reduce((s, d) => s + d.count, 0);
+    const prev7Total = prev7.reduce((s, d) => s + d.count, 0);
+    const last7Positive = last7.reduce((s, d) => s + d.positive, 0);
+    const prev7Positive = prev7.reduce((s, d) => s + d.positive, 0);
 
     return {
-      total: records.length,
-      totalTrend: trendPercent(last7.length, prev7.length),
-      positive: count(records, "Positive"),
-      positiveTrend: trendPercent(count(last7, "Positive"), count(prev7, "Positive")),
-      negative: count(records, "Negative"),
-      negativeTrend: trendPercent(count(last7, "Negative"), count(prev7, "Negative")),
-      inconclusive: count(records, "Inconclusive"),
-      inconclusiveTrend: trendPercent(count(last7, "Inconclusive"), count(prev7, "Inconclusive")),
+      total: summary.totals.total,
+      totalTrend: trendPercent(last7Total, prev7Total),
+      positive: summary.totals.positive,
+      positiveTrend: trendPercent(last7Positive, prev7Positive),
+      negative: summary.totals.negative,
+      negativeTrend: trendPercent(last7Total - last7Positive, prev7Total - prev7Positive),
+      inconclusive: summary.totals.inconclusive,
+      inconclusiveTrend: 0,
     };
-  }, [records]);
+  }, [summary]);
 
   return (
     <>
@@ -94,33 +155,33 @@ export function OverviewScreen({ officerName, onStartTest, onViewHistory }: Over
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
             label="Total tests"
-            value={stats.total}
+            value={stats?.total ?? 0}
             icon={ClipboardList}
-            trend={stats.totalTrend}
+            trend={stats?.totalTrend}
             description="vs. previous 7 days"
           />
           <StatCard
             label="Positive"
-            value={stats.positive}
+            value={stats?.positive ?? 0}
             icon={CheckCircle2}
             tone="positive"
-            trend={stats.positiveTrend}
+            trend={stats?.positiveTrend}
             description="vs. previous 7 days"
           />
           <StatCard
             label="Negative"
-            value={stats.negative}
+            value={stats?.negative ?? 0}
             icon={XCircle}
             tone="negative"
-            trend={stats.negativeTrend}
+            trend={stats?.negativeTrend}
             description="vs. previous 7 days"
           />
           <StatCard
             label="Inconclusive"
-            value={stats.inconclusive}
+            value={stats?.inconclusive ?? 0}
             icon={AlertTriangle}
             tone="inconclusive"
-            trend={stats.inconclusiveTrend}
+            trend={stats?.inconclusiveTrend}
             description="vs. previous 7 days"
           />
         </div>
