@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Camera, CheckCircle2, ClipboardList, XCircle } from "lucide-react";
 import { getAnalyticsSummary, getHistory, ApiError } from "../api/client";
+// TODO: ActivityChart chartData fallback still synthesizes from mockDashboardHistory.
+// When the real by_day endpoint includes full per-test detail, point RecordsTable
+// (already on /api/history) and ActivityChart at the real analytics data end-to-end.
 import type { AnalyticsSummary, EvidenceRecord } from "../api/types";
 import { useDemoMode } from "../lib/demoMode";
 import { mockDashboardHistory } from "../lib/mock";
