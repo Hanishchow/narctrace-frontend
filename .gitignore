@@ -4,3 +4,6 @@ dist/
 .env.local
 .DS_Store
 *.log
+
+# API base is a public URL, not a secret — must ship so the Pages CI build has it
+!.env.production
