@@ -59,10 +59,16 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-// Sent on every request. `ngrok-skip-browser-warning` stops ngrok's free-tier
-// HTML interstitial from replacing our JSON responses; harmless on other hosts.
+// Sent on every request. Both headers defeat tunnel interstitial pages that would
+// otherwise replace our JSON with HTML: `ngrok-skip-browser-warning` for ngrok,
+// `bypass-tunnel-reminder` for localtunnel (.loca.lt). Harmless on other hosts.
 function headers(extra: Record<string, string> = {}): Record<string, string> {
-  return { "ngrok-skip-browser-warning": "true", ...authHeaders(), ...extra };
+  return {
+    "ngrok-skip-browser-warning": "true",
+    "bypass-tunnel-reminder": "true",
+    ...authHeaders(),
+    ...extra,
+  };
 }
 
 async function parseJson<T>(res: Response): Promise<T> {
