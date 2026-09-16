@@ -3,6 +3,7 @@
 
 import type {
   AnalysisResult,
+  AnalyticsSummary,
   AnalyzePayload,
   HealthResponse,
   HistoryDetailResponse,
@@ -58,6 +59,12 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// Sent on every request. `ngrok-skip-browser-warning` stops ngrok's free-tier
+// HTML interstitial from replacing our JSON responses; harmless on other hosts.
+function headers(extra: Record<string, string> = {}): Record<string, string> {
+  return { "ngrok-skip-browser-warning": "true", ...authHeaders(), ...extra };
+}
+
 async function parseJson<T>(res: Response): Promise<T> {
   const text = await res.text();
   let body: unknown = null;
@@ -89,19 +96,19 @@ async function parseJson<T>(res: Response): Promise<T> {
 // --- Endpoints (PRD §4) ---
 
 export function health(): Promise<HealthResponse> {
-  return fetch(`${API_PREFIX}/health`).then((r) => parseJson<HealthResponse>(r));
+  return fetch(`${API_PREFIX}/health`, { headers: headers() }).then((r) => parseJson<HealthResponse>(r));
 }
 
 export function login(badge_id: string, password: string): Promise<LoginResponse> {
   return fetch(`${API_PREFIX}/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ badge_id, password }),
   }).then((r) => parseJson<LoginResponse>(r));
 }
 
 export function getProfiles(): Promise<ProfilesResponse> {
-  return fetch(`${API_PREFIX}/profiles`, { headers: authHeaders() }).then((r) =>
+  return fetch(`${API_PREFIX}/profiles`, { headers: headers() }).then((r) =>
     parseJson<ProfilesResponse>(r),
   );
 }
@@ -114,7 +121,7 @@ export function analyze(payload: AnalyzePayload): Promise<AnalysisResult> {
   form.append("gps", JSON.stringify(payload.gps));
   return fetch(`${API_PREFIX}/analyze`, {
     method: "POST",
-    headers: authHeaders(), // do NOT set Content-Type; browser sets multipart boundary
+    headers: headers(), // do NOT set Content-Type; browser sets multipart boundary
     body: form,
   }).then((r) => parseJson<AnalysisResult>(r));
 }
@@ -132,13 +139,19 @@ export function getHistory(filters: HistoryFilters = {}): Promise<HistoryRespons
   if (filters.profile) params.set("profile", filters.profile);
   const qs = params.toString();
   return fetch(`${API_PREFIX}/history${qs ? `?${qs}` : ""}`, {
-    headers: authHeaders(),
+    headers: headers(),
   }).then((r) => parseJson<HistoryResponse>(r));
+}
+
+export function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+  return fetch(`${API_PREFIX}/analytics/summary`, { headers: headers() }).then((r) =>
+    parseJson<AnalyticsSummary>(r),
+  );
 }
 
 export function getHistoryDetail(testId: string): Promise<HistoryDetailResponse> {
   return fetch(`${API_PREFIX}/history/${encodeURIComponent(testId)}`, {
-    headers: authHeaders(),
+    headers: headers(),
   }).then((r) => parseJson<HistoryDetailResponse>(r));
 }
 
@@ -150,7 +163,7 @@ export async function fetchEvidenceImage(imageUrl: string): Promise<string> {
   const full = /^https?:\/\//.test(imageUrl)
     ? imageUrl
     : `${API_BASE}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
-  const res = await fetch(full, { headers: authHeaders() });
+  const res = await fetch(full, { headers: headers() });
   if (!res.ok) throw new ApiError("Failed to load evidence image", res.status);
   const blob = await res.blob();
   return URL.createObjectURL(blob);

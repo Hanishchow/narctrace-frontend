@@ -106,3 +106,23 @@ export interface AnalyzePayload {
   operator_id: string;
   gps: Gps | null;
 }
+
+// GET /api/analytics/summary (PRD v2 Track C) — presentation dashboard stats.
+export interface AnalyticsSummary {
+  success: boolean;
+  totals: {
+    total: number;
+    positive: number;
+    negative: number;
+    inconclusive: number;
+    quality_rejected: number;
+  };
+  rates: {
+    positive_rate: number;
+    negative_rate: number;
+    inconclusive_rate: number;
+  };
+  by_profile: { profile_id: string; count: number }[];
+  by_day: { date: string; count: number; positive: number }[];
+  by_operator: { operator_id: string; count: number }[];
+}
