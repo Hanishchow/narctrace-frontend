@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { analyze, ApiError } from "../api/client";
+import { analyze, ApiError, previewCapture } from "../api/client";
 import type { AnalysisResult } from "../api/types";
 import { useDemoMode } from "../lib/demoMode";
 import { mockAnalyze } from "../lib/mock";
 import { CameraFrame } from "../components/CameraFrame";
 import { Button } from "../components/Button";
+import { queueCapture } from "../offline/captureQueue";
 import type { TestSession } from "../App";
 
 interface CaptureScreenProps {
@@ -29,7 +30,9 @@ export function CaptureScreen({
   const [phase, setPhase] = useState<Phase>("starting");
   const [status, setStatus] = useState<string>("Starting camera…");
   const [error, setError] = useState<string | null>(null);
-  const [captured, setCaptured] = useState<{ blob: Blob; url: string } | null>(null);
+  const [captured, setCaptured] = useState<{ blob: Blob; url: string; idempotencyKey: string } | null>(null);
+  const [preview, setPreview] = useState<{ ready: boolean; guidance: string } | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -90,7 +93,7 @@ export function CaptureScreen({
         const url = URL.createObjectURL(blob);
         setCaptured((prev) => {
           if (prev) URL.revokeObjectURL(prev.url);
-          return { blob, url };
+          return { blob, url, idempotencyKey: crypto.randomUUID() };
         });
         setPhase("captured");
         stopStream();
@@ -115,7 +118,7 @@ export function CaptureScreen({
         const url = URL.createObjectURL(blob);
         setCaptured((prev) => {
           if (prev) URL.revokeObjectURL(prev.url);
-          return { blob, url };
+          return { blob, url, idempotencyKey: crypto.randomUUID() };
         });
         setPhase("captured");
         stopStream();
@@ -129,6 +132,7 @@ export function CaptureScreen({
     if (captured) URL.revokeObjectURL(captured.url);
     setCaptured(null);
     setError(null);
+    setPreview(null);
     setPhase("starting");
     setStatus("Restarting camera…");
     // re-run effect by remounting camera: simplest is reload stream inline
@@ -150,6 +154,20 @@ export function CaptureScreen({
     })();
   };
 
+  const checkFraming = async () => {
+    if (!captured || demo) return;
+    setChecking(true);
+    setError(null);
+    try {
+      const response = await previewCapture(captured.blob, session.profile.profile_id);
+      setPreview({ ready: response.success, guidance: response.guidance });
+    } catch (err) {
+      setError(err instanceof ApiError ? `Capture check failed: ${err.message}` : "Could not check this capture.");
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const submit = async () => {
     if (!captured) return;
     setPhase("analyzing");
@@ -160,6 +178,8 @@ export function CaptureScreen({
         profile_id: session.profile.profile_id,
         operator_id: operatorId,
         gps: session.gps,
+        case_id: session.caseId,
+        idempotency_key: captured.idempotencyKey,
       };
       const result = demo ? await mockAnalyze(payload) : await analyze(payload);
       toast.success(`Analysis complete — ${result.result}`, {
@@ -179,8 +199,22 @@ export function CaptureScreen({
         setError(`Analysis failed: ${err.message}`);
         toast.error("Analysis failed", { description: err.message });
       } else {
-        setError("Could not reach the backend to analyze the image.");
-        toast.error("Could not reach the backend");
+        try {
+          await queueCapture({
+            idempotencyKey: captured.idempotencyKey,
+            image: captured.blob,
+            profileId: session.profile.profile_id,
+            operatorId,
+            gps: session.gps,
+            capturedAt: new Date().toISOString(),
+            status: "queued",
+          });
+          setError("Connection lost. This capture is saved on this device and will retry when you reconnect.");
+          toast.message("Capture saved for sync");
+        } catch {
+          setError("Could not reach the backend and this device could not save the capture for retry.");
+          toast.error("Could not save offline capture");
+        }
       }
     }
   };
@@ -210,6 +244,15 @@ export function CaptureScreen({
         </p>
       )}
 
+      {preview && (
+        <p
+          role="status"
+          className={`rounded-lg px-4 py-3 text-sm font-medium ${preview.ready ? "bg-positive-bg text-positive" : "bg-inconclusive-bg text-inconclusive"}`}
+        >
+          {preview.guidance}
+        </p>
+      )}
+
       <div className="flex flex-col gap-3">
         {phase === "live" && (
           <Button block onClick={capture}>
@@ -226,6 +269,11 @@ export function CaptureScreen({
             <Button block onClick={submit} disabled={phase === "analyzing"}>
               {phase === "analyzing" ? "Analyzing…" : "Analyze"}
             </Button>
+            {!demo && (
+              <Button variant="secondary" block onClick={checkFraming} disabled={phase === "analyzing" || checking}>
+                {checking ? "Checking capture…" : "Check framing before analysis"}
+              </Button>
+            )}
             <Button variant="secondary" block onClick={retake} disabled={phase === "analyzing"}>
               Retake
             </Button>

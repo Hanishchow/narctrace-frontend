@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { AlertTriangle, LogOut, ShieldCheck } from "lucide-react";
-import { health, getToken, setToken } from "./api/client";
+import { analyze, health, getToken, setToken } from "./api/client";
 import type {
   AnalysisResult,
   Gps,
@@ -21,6 +21,7 @@ import { CaptureScreen } from "./screens/CaptureScreen";
 import { ResultScreen } from "./screens/ResultScreen";
 import { HistoryScreen } from "./screens/HistoryScreen";
 import { Skeleton } from "./components/Skeleton";
+import { flushQueuedCaptures } from "./offline/captureQueue";
 
 // Overview pulls in recharts + TanStack Table — code-split so the landing
 // page, login, and the rest of the app don't pay for that bundle weight.
@@ -34,6 +35,7 @@ type Backend = "checking" | "ok" | "unreachable";
 export interface TestSession {
   profile: KitProfile;
   gps: Gps | null;
+  caseId?: string;
 }
 
 export function App() {
@@ -62,6 +64,24 @@ export function App() {
   useEffect(() => {
     if (!getToken()) setOfficer(null);
   }, []);
+
+  useEffect(() => {
+    if (!officer || demo || backend !== "ok") return;
+    const flush = () => {
+      flushQueuedCaptures(officer.badge_id, (capture) =>
+        analyze({
+          image: capture.image,
+          profile_id: capture.profileId,
+          operator_id: capture.operatorId,
+          gps: capture.gps,
+          idempotency_key: capture.idempotencyKey,
+        }),
+      ).catch(() => undefined);
+    };
+    flush();
+    window.addEventListener("online", flush);
+    return () => window.removeEventListener("online", flush);
+  }, [officer, demo, backend]);
 
   const handleLogout = () => {
     setToken(null);
@@ -203,6 +223,7 @@ export function App() {
                   <Suspense fallback={<Skeleton className="h-[600px] rounded-lg" />}>
                     <OverviewScreen
                       officerName={officer.name}
+                      operatorId={officer.badge_id}
                       onStartTest={goStart}
                       onViewHistory={goHistory}
                     />

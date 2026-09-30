@@ -5,6 +5,11 @@ import type {
   AnalysisResult,
   AnalyticsSummary,
   AnalyzePayload,
+  CapturePreview,
+  EvidenceVerification,
+  CaseListResponse,
+  CaseResponse,
+  FieldCase,
   HealthResponse,
   HistoryDetailResponse,
   HistoryResponse,
@@ -13,7 +18,8 @@ import type {
   ResultClass,
 } from "./types";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
+const configuredApiBase = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
+const API_BASE = configuredApiBase.replace(/\/+$/, "");
 const API_PREFIX = `${API_BASE}/api`;
 
 export class ApiError extends Error {
@@ -71,6 +77,10 @@ function headers(extra: Record<string, string> = {}): Record<string, string> {
   };
 }
 
+function requestInit(init: RequestInit = {}): RequestInit {
+  return { credentials: "omit", ...init };
+}
+
 async function parseJson<T>(res: Response): Promise<T> {
   const text = await res.text();
   let body: unknown = null;
@@ -102,7 +112,7 @@ async function parseJson<T>(res: Response): Promise<T> {
 // --- Endpoints (PRD §4) ---
 
 export function health(): Promise<HealthResponse> {
-  return fetch(`${API_PREFIX}/health`, { headers: headers() }).then((r) => parseJson<HealthResponse>(r));
+  return fetch(`${API_PREFIX}/health`, requestInit({ headers: headers() })).then((r) => parseJson<HealthResponse>(r));
 }
 
 export function login(badge_id: string, password: string): Promise<LoginResponse> {
@@ -110,11 +120,11 @@ export function login(badge_id: string, password: string): Promise<LoginResponse
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ badge_id, password }),
-  }).then((r) => parseJson<LoginResponse>(r));
+  })).then((r) => parseJson<LoginResponse>(r));
 }
 
 export function getProfiles(): Promise<ProfilesResponse> {
-  return fetch(`${API_PREFIX}/profiles`, { headers: headers() }).then((r) =>
+  return fetch(`${API_PREFIX}/profiles`, requestInit({ headers: headers() })).then((r) =>
     parseJson<ProfilesResponse>(r),
   );
 }
@@ -125,11 +135,23 @@ export function analyze(payload: AnalyzePayload): Promise<AnalysisResult> {
   form.append("profile_id", payload.profile_id);
   form.append("operator_id", payload.operator_id);
   form.append("gps", JSON.stringify(payload.gps));
-  return fetch(`${API_PREFIX}/analyze`, {
+  if (payload.case_id) form.append("case_id", payload.case_id);
+  return fetch(`${API_PREFIX}/analyze`, requestInit({
     method: "POST",
-    headers: headers(), // do NOT set Content-Type; browser sets multipart boundary
+    headers: headers({ "Idempotency-Key": payload.idempotency_key }), // do NOT set Content-Type; browser sets multipart boundary
     body: form,
-  }).then((r) => parseJson<AnalysisResult>(r));
+  })).then((r) => parseJson<AnalysisResult>(r));
+}
+
+export function previewCapture(image: Blob, profileId: string): Promise<CapturePreview> {
+  const form = new FormData();
+  form.append("image", image, `${profileId}-preview.jpg`);
+  form.append("profile_id", profileId);
+  return fetch(`${API_PREFIX}/capture-preview`, requestInit({
+    method: "POST",
+    headers: headers(),
+    body: form,
+  })).then((r) => parseJson<CapturePreview>(r));
 }
 
 export interface HistoryFilters {
@@ -144,21 +166,55 @@ export function getHistory(filters: HistoryFilters = {}): Promise<HistoryRespons
   if (filters.result) params.set("result", filters.result);
   if (filters.profile) params.set("profile", filters.profile);
   const qs = params.toString();
-  return fetch(`${API_PREFIX}/history${qs ? `?${qs}` : ""}`, {
+  return fetch(`${API_PREFIX}/history${qs ? `?${qs}` : ""}`, requestInit({
     headers: headers(),
-  }).then((r) => parseJson<HistoryResponse>(r));
+  })).then((r) => parseJson<HistoryResponse>(r));
 }
 
 export function getAnalyticsSummary(): Promise<AnalyticsSummary> {
-  return fetch(`${API_PREFIX}/analytics/summary`, { headers: headers() }).then((r) =>
+  return fetch(`${API_PREFIX}/analytics/summary`, requestInit({ headers: headers() })).then((r) =>
     parseJson<AnalyticsSummary>(r),
   );
 }
 
 export function getHistoryDetail(testId: string): Promise<HistoryDetailResponse> {
-  return fetch(`${API_PREFIX}/history/${encodeURIComponent(testId)}`, {
+  return fetch(`${API_PREFIX}/history/${encodeURIComponent(testId)}`, requestInit({
     headers: headers(),
-  }).then((r) => parseJson<HistoryDetailResponse>(r));
+  })).then((r) => parseJson<HistoryDetailResponse>(r));
+}
+
+export function verifyEvidence(testId: string): Promise<EvidenceVerification> {
+  return fetch(`${API_PREFIX}/history/${encodeURIComponent(testId)}/verify`, requestInit({
+    headers: headers(),
+  })).then((r) => parseJson<EvidenceVerification>(r));
+}
+
+export function getCases(): Promise<CaseListResponse> {
+  return fetch(`${API_PREFIX}/v2/cases`, requestInit({ headers: headers() })).then((r) => parseJson<CaseListResponse>(r));
+}
+
+export function createCase(reference: string, title: string): Promise<CaseResponse> {
+  return fetch(`${API_PREFIX}/v2/cases`, requestInit({
+    method: "POST",
+    headers: headers({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ reference, title }),
+  })).then((r) => parseJson<CaseResponse>(r));
+}
+
+export function transitionCase(fieldCase: FieldCase, action: string): Promise<CaseResponse> {
+  return fetch(`${API_PREFIX}/v2/cases/${encodeURIComponent(fieldCase.case_id)}/events`, requestInit({
+    method: "POST",
+    headers: headers({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ action, expected_version: fieldCase.version }),
+  })).then((r) => parseJson<CaseResponse>(r));
+}
+
+export function addLabReport(fieldCase: FieldCase, laboratory: string, outcome: string, report_reference: string): Promise<CaseResponse> {
+  return fetch(`${API_PREFIX}/v2/cases/${encodeURIComponent(fieldCase.case_id)}/lab-reports`, requestInit({
+    method: "POST",
+    headers: headers({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ laboratory, outcome, report_reference }),
+  })).then((r) => parseJson<CaseResponse>(r));
 }
 
 // Evidence images are served behind the Bearer guard, so an <img src> cannot
@@ -169,7 +225,10 @@ export async function fetchEvidenceImage(imageUrl: string): Promise<string> {
   const full = /^https?:\/\//.test(imageUrl)
     ? imageUrl
     : `${API_BASE}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
-  const res = await fetch(full, { headers: headers() });
+  if (new URL(full).origin !== new URL(API_BASE).origin) {
+    throw new ApiError("Evidence URL is outside the configured API origin", 400);
+  }
+  const res = await fetch(full, requestInit({ headers: headers() }));
   if (!res.ok) throw new ApiError("Failed to load evidence image", res.status);
   const blob = await res.blob();
   return URL.createObjectURL(blob);

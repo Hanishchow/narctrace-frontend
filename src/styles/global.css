@@ -17,9 +17,11 @@
     @apply bg-background text-foreground antialiased;
     font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-image: radial-gradient(hsl(var(--accent-strong) / 0.07) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
   #root {
-    min-height: 100vh;
+    min-height: 100dvh;
   }
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
@@ -29,6 +31,9 @@
 @layer utilities {
   .mono {
     font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  .measurement-rail {
+    border-left: 3px solid hsl(var(--accent-strong));
   }
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Check, History, MapPin, RefreshCw } from "lucide-react";
-import { getProfiles, ApiError } from "../api/client";
+import { getCases, getProfiles, ApiError } from "../api/client";
 import type { KitProfile } from "../api/types";
 import { acquireGpsFix } from "../lib/geo";
 import { useDemoMode } from "../lib/demoMode";
@@ -28,6 +28,8 @@ export function StartTestScreen({ onProceed, onViewHistory }: StartTestScreenPro
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [gps, setGps] = useState<GpsState>({ status: "idle" });
+  const [cases, setCases] = useState<{ case_id: string; reference: string; title: string }[]>([]);
+  const [caseId, setCaseId] = useState("");
 
   useEffect(() => {
     if (demo) {
@@ -57,6 +59,15 @@ export function StartTestScreen({ onProceed, onViewHistory }: StartTestScreenPro
     };
   }, [demo]);
 
+  useEffect(() => {
+    if (demo) return;
+    let alive = true;
+    getCases()
+      .then((response) => alive && setCases(response.cases))
+      .catch(() => undefined);
+    return () => { alive = false; };
+  }, [demo]);
+
   const locate = async () => {
     setGps({ status: "locating" });
     try {
@@ -78,7 +89,7 @@ export function StartTestScreen({ onProceed, onViewHistory }: StartTestScreenPro
       gps.status === "ok"
         ? { lat: gps.lat, lon: gps.lon, label: gps.label }
         : null;
-    onProceed({ profile, gps: gpsPayload });
+    onProceed({ profile, gps: gpsPayload, caseId: caseId || undefined });
   };
 
   return (
@@ -191,6 +202,18 @@ export function StartTestScreen({ onProceed, onViewHistory }: StartTestScreenPro
                 {gps.status === "ok" ? "Re-acquire location" : "Acquire GPS location"}
               </Button>
             </div>
+          </div>
+        </section>
+
+        <section className="flex flex-1 flex-col gap-3">
+          <h2 className="text-sm font-semibold text-muted-foreground">3. Case link</h2>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <label className="text-sm font-medium" htmlFor="case-link">Attach this test to a case</label>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">Optional. Linked evidence appears in the field-to-lab custody timeline.</p>
+            <select id="case-link" value={caseId} onChange={(event) => setCaseId(event.target.value)} className="mt-3 min-h-[44px] w-full rounded-lg border border-input bg-background px-3 text-sm">
+              <option value="">No case selected</option>
+              {cases.map((fieldCase) => <option key={fieldCase.case_id} value={fieldCase.case_id}>{fieldCase.reference} · {fieldCase.title}</option>)}
+            </select>
           </div>
         </section>
       </div>

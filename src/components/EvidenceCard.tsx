@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ColorMetrics, EvidenceMeta, Gps, QualityTelemetry } from "../api/types";
-import { fetchEvidenceImage } from "../api/client";
+import { fetchEvidenceImage, verifyEvidence } from "../api/client";
 import { cn } from "../lib/utils";
 import { NumberTicker } from "./NumberTicker";
 
@@ -36,6 +36,8 @@ export function EvidenceCard({
 
   // Evidence images sit behind the Bearer guard; fetch with auth into an object URL.
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [verification, setVerification] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
   useEffect(() => {
     if (!imageUrl) return;
     let revoked = false;
@@ -55,6 +57,18 @@ export function EvidenceCard({
       if (created) URL.revokeObjectURL(created);
     };
   }, [imageUrl]);
+
+  const verify = async () => {
+    setVerifying(true);
+    try {
+      const result = await verifyEvidence(testId);
+      setVerification(result.reason);
+    } catch {
+      setVerification("Could not verify this evidence record right now.");
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -134,6 +148,19 @@ export function EvidenceCard({
           />
         )}
       </dl>
+      {imageUrl && (
+        <div className="border-t border-border px-4 py-3">
+          <button
+            type="button"
+            onClick={verify}
+            disabled={verifying}
+            className="text-sm font-semibold text-accent-strong transition-opacity hover:opacity-75 disabled:opacity-50"
+          >
+            {verifying ? "Verifying evidence…" : "Verify evidence receipt"}
+          </button>
+          {verification && <p role="status" className="mt-2 text-xs text-muted-foreground">{verification}</p>}
+        </div>
+      )}
     </div>
   );
 }

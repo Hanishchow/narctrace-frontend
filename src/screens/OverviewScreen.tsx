@@ -12,9 +12,12 @@ import { ActivityChart } from "../components/dashboard/ActivityChart";
 import { RecordsTable } from "../components/dashboard/RecordsTable";
 import { Button } from "../components/Button";
 import { Skeleton } from "../components/Skeleton";
+import { CaseWorkspace } from "../components/CaseWorkspace";
+import { CaptureQueue } from "../components/CaptureQueue";
 
 interface OverviewScreenProps {
   officerName: string;
+  operatorId: string;
   onStartTest: () => void;
   onViewHistory: () => void;
 }
@@ -24,7 +27,7 @@ function trendPercent(current: number, previous: number): number {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-export function OverviewScreen({ officerName, onStartTest, onViewHistory }: OverviewScreenProps) {
+export function OverviewScreen({ officerName, operatorId, onStartTest, onViewHistory }: OverviewScreenProps) {
   const demo = useDemoMode();
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [records, setRecords] = useState<EvidenceRecord[]>([]);
@@ -175,6 +178,9 @@ export function OverviewScreen({ officerName, onStartTest, onViewHistory }: Over
           <RecordsTable records={records} onOpenRecord={onViewHistory} />
         )}
       </section>
+
+      {!demo && <CaseWorkspace />}
+      {!demo && <CaptureQueue operatorId={operatorId} />}
     </>
   );
 }
