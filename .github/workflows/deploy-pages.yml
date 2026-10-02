@@ -30,7 +30,7 @@ jobs:
       # variable (Settings → Variables → VITE_API_BASE) if the URL ever changes.
       - run: npm run build
         env:
-          VITE_API_BASE: ${{ vars.VITE_API_BASE || 'https://narctrace-backend.onrender.com' }}
+          VITE_API_BASE: ${{ vars.VITE_API_BASE || 'https://vendors-paragraph-locator-hunting.trycloudflare.com' }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
