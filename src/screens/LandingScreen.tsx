@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ChevronDown, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { DashboardPreview } from "../components/landing/DashboardPreview";
 import { RevealWord } from "../components/landing/RevealWord";
 import { HowItWorks } from "../components/landing/HowItWorks";
@@ -11,9 +11,9 @@ interface LandingScreenProps {
 }
 
 const MISSION =
-  "NarcTrace turns a subjective field call into a deterministic, tamper-evident " +
-  "record we can stand behind. We are now capturing evidence faster and with more " +
-  "confidence than we ever could by eye alone.";
+  "We built NarcTrace because a field officer's call should never rest on memory or " +
+  "subjectivity. Every reaction deserves a record that is precise, reproducible, " +
+  "and defensible the moment it is captured.";
 
 function MissionReveal() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,7 +51,7 @@ function MissionReveal() {
           <ShieldCheck className="h-6 w-6 text-foreground" strokeWidth={2.25} />
         </span>
         <div>
-          <p className="text-base font-semibold leading-7 text-foreground">The NarcTrace Team</p>
+          <p className="text-base font-semibold leading-7 text-foreground">Team Celure</p>
           <p className="text-sm font-normal leading-5 text-muted-foreground">
             Smart India Hackathon — SIH26231
           </p>
@@ -60,6 +60,14 @@ function MissionReveal() {
     </div>
   );
 }
+
+// Stat strip shown below the hero
+const STATS = [
+  { value: "< 30s", label: "Capture to record" },
+  { value: "CIELAB", label: "Colour science engine" },
+  { value: "SHA-256", label: "Image hash on every test" },
+  { value: "GPS + time", label: "Sealed into every record" },
+];
 
 export function LandingScreen({ onGetStarted }: LandingScreenProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -75,21 +83,16 @@ export function LandingScreen({ onGetStarted }: LandingScreenProps) {
   return (
     <div className="bg-background text-foreground">
       <section ref={sectionRef} className="relative w-full overflow-hidden">
-        {/* Fixed video backdrop behind the whole hero section. */}
         <video
           className="absolute inset-0 h-full w-full object-cover"
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260307_083826_e938b29f-a43a-41ec-a153-3d4730578ab8.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          aria-hidden="true"
+          autoPlay loop muted playsInline aria-hidden="true"
         />
         <div className="absolute inset-0 bg-background/40" aria-hidden="true" />
 
         <div className="relative z-10 flex min-h-screen flex-col">
           <nav className="flex items-center justify-between px-8 py-4 md:px-28">
-            <div className="flex items-center gap-12 md:gap-20">
+            <div className="flex items-center gap-10 md:gap-16">
               <div className="flex items-center gap-2">
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-foreground text-background">
                   <ShieldCheck className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
@@ -97,27 +100,24 @@ export function LandingScreen({ onGetStarted }: LandingScreenProps) {
                 <span className="text-xl font-bold tracking-tight">NarcTrace</span>
               </div>
               <div className="hidden items-center gap-1 md:flex">
-                {["Home", "Services", "Reviews", "Contact us"].map((label) => (
+                {["How it works", "Evidence chain", "SIH26231"].map((label) => (
                   <button
                     key={label}
                     type="button"
-                    className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                   >
                     {label}
-                    {label === "Services" && <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={onGetStarted}
-                className="rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background transition-opacity hover:opacity-85"
-              >
-                Sign In
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onGetStarted}
+              className="rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background transition-opacity hover:opacity-85"
+            >
+              Open app
+            </button>
           </nav>
 
           <motion.div
@@ -131,10 +131,10 @@ export function LandingScreen({ onGetStarted }: LandingScreenProps) {
               className="liquid-glass mb-6 rounded-lg px-3 py-2"
             >
               <span className="mr-2 rounded-md bg-foreground px-2 py-0.5 text-sm font-medium text-background">
-                New
+                SIH 2026
               </span>
               <span className="text-sm font-medium text-muted-foreground">
-                Say Hello to NarcTrace v1
+                Problem SIH26231 · Team Celure
               </span>
             </motion.div>
 
@@ -153,25 +153,37 @@ export function LandingScreen({ onGetStarted }: LandingScreenProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="mb-8 text-lg font-normal leading-6 text-hero-subtitle opacity-90"
+              className="mb-8 max-w-xl text-lg font-normal leading-7 text-hero-subtitle opacity-90"
             >
-              NarcTrace helps officers capture, classify, and record field drug-test reactions,
-              <br />
-              with precision.
+              Digitise the colorimetric drug-test reaction into a tamper-evident evidence record —
+              GPS-tagged, hashed, and court-ready in under 30 seconds.
             </motion.p>
 
-            <motion.button
-              type="button"
-              onClick={onGetStarted}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-              className="rounded-full bg-foreground px-8 py-3.5 text-base font-medium text-background"
+              className="flex flex-wrap items-center justify-center gap-3"
             >
-              Get Started for Free
-            </motion.button>
+              <motion.button
+                type="button"
+                onClick={onGetStarted}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                className="rounded-full bg-foreground px-8 py-3.5 text-base font-medium text-background"
+              >
+                Start capturing
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={onGetStarted}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                className="rounded-full border border-foreground/30 bg-background/20 px-8 py-3.5 text-base font-medium text-foreground backdrop-blur-sm"
+              >
+                View demo
+              </motion.button>
+            </motion.div>
           </motion.div>
 
           <motion.div
@@ -193,6 +205,18 @@ export function LandingScreen({ onGetStarted }: LandingScreenProps) {
           className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-40 bg-gradient-to-t from-background to-transparent"
           aria-hidden="true"
         />
+      </section>
+
+      {/* Stats strip */}
+      <section className="border-y border-border px-8 py-10 md:px-28">
+        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 md:grid-cols-4">
+          {STATS.map((s) => (
+            <div key={s.label} className="flex flex-col gap-1">
+              <span className="text-2xl font-bold tracking-tight">{s.value}</span>
+              <span className="text-sm text-muted-foreground">{s.label}</span>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="min-h-screen px-8 py-24 md:px-28 md:py-32">

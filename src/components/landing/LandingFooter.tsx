@@ -12,10 +12,10 @@ export function LandingFooter({ onGetStarted }: LandingFooterProps) {
         <div className="flex flex-col items-start justify-between gap-6 border-b border-border pb-12 md:flex-row md:items-center">
           <div>
             <h2 className="text-2xl font-medium tracking-tight md:text-3xl">
-              Ready to record your first <span className="font-serif font-normal italic">test</span>?
+              Ready to capture your first <span className="font-serif font-normal italic">record</span>?
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Sign in with a badge ID, or explore the full flow in demo mode.
+              No account needed — enter your name and start capturing in seconds.
             </p>
           </div>
           <Button onClick={onGetStarted} className="rounded-full px-8 py-3.5">

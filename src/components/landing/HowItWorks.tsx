@@ -1,26 +1,26 @@
 import { motion } from "framer-motion";
-import { Camera, FileCheck2, LogIn, ScanLine } from "lucide-react";
+import { Camera, FileCheck2, MapPin, ScanLine } from "lucide-react";
 
 const STEPS = [
   {
-    icon: LogIn,
-    title: "Officer sign-in",
-    description: "Authenticate with a badge ID. Every capture is tied to a verified officer identity.",
+    icon: MapPin,
+    title: "Select kit & location",
+    description: "Choose your colorimetric test kit and optionally pin GPS coordinates. Takes under 10 seconds.",
   },
   {
     icon: Camera,
-    title: "Standardized capture",
-    description: "Guided camera flow, GPS location, and kit profile selection — the same steps every time.",
+    title: "Guided camera capture",
+    description: "Frame the reaction well inside the overlay. The app checks focus, exposure and glare before accepting.",
   },
   {
     icon: ScanLine,
-    title: "Deterministic analysis",
-    description: "CIELAB colour science and ΔE thresholds classify the reaction. No black-box ML.",
+    title: "CIELAB colour analysis",
+    description: "ΔE thresholds against reference card values classify the reaction — no black-box ML, fully auditable.",
   },
   {
     icon: FileCheck2,
     title: "Tamper-evident record",
-    description: "Test ID, timestamp, GPS, and image hash — stored and searchable in history.",
+    description: "SHA-256 image hash, GPS, timestamp and operator ID are sealed into an evidence passport on submission.",
   },
 ];
 
@@ -29,10 +29,13 @@ export function HowItWorks() {
     <section className="px-8 py-24 md:px-28 md:py-32">
       <div className="mx-auto max-w-5xl">
         <div className="max-w-xl">
-          <p className="text-sm font-medium text-muted-foreground">How it works</p>
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">How it works</p>
           <h2 className="mt-3 text-3xl font-medium tracking-tight md:text-4xl">
-            From reaction to <span className="font-serif font-normal italic">record</span>, in four steps.
+            Reaction to <span className="font-serif font-normal italic">record</span> in four steps.
           </h2>
+          <p className="mt-4 text-base text-muted-foreground leading-relaxed">
+            No training required. The same workflow every time, for every officer, on any device.
+          </p>
         </div>
 
         <div className="mt-14 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
