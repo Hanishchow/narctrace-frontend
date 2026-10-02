@@ -101,6 +101,7 @@ export interface FieldCase {
   updated_at: string;
   events?: CustodyEvent[];
   lab_reports?: LabReport[];
+  evidence_test_ids?: string[];
 }
 
 export interface LabReport {
@@ -194,44 +195,3 @@ export interface AnalyticsSummary {
   by_operator: { operator_id: string; count: number }[];
 }
 
-export type CaseStatus = "open" | "submitted" | "received_by_lab" | "reviewed" | "closed";
-
-export interface CustodyEvent {
-  sequence: number;
-  action: string;
-  actor_id: string;
-  created_at: string;
-}
-
-export interface LabReport {
-  report_id: string;
-  laboratory: string;
-  outcome: string;
-  report_reference: string;
-  actor_id: string;
-  created_at: string;
-}
-
-export interface FieldCase {
-  case_id: string;
-  reference: string;
-  title: string;
-  status: CaseStatus;
-  version: number;
-  owner_id: string;
-  created_at: string;
-  updated_at: string;
-  events?: CustodyEvent[];
-  lab_reports?: LabReport[];
-  evidence_test_ids?: string[];
-}
-
-export interface CaseListResponse {
-  success: boolean;
-  cases: FieldCase[];
-}
-
-export interface CaseResponse {
-  success: boolean;
-  case: FieldCase;
-}

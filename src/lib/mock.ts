@@ -24,6 +24,13 @@ const DEMO_DISCLAIMER =
   "confirmatory testing. All kit profiles, thresholds and target colour values are " +
   "SIMULATED / PROXY values for safe demonstration.";
 
+const DEMO_EXPLANATION = {
+  method: "Simulated colourimetric field workflow",
+  summary: "Demo output only; confirm all findings with laboratory analysis.",
+  pipeline_version: "demo-1.0",
+  classification_rule: "Nearest calibrated reference colour",
+};
+
 function pad(n: number, len: number) {
   return String(n).padStart(len, "0");
 }
@@ -79,6 +86,7 @@ export function mockAnalyze(payload: AnalyzePayload): Promise<AnalysisResult> {
       ).join(""),
       image_url: "",
     },
+    explanation: DEMO_EXPLANATION,
     disclaimer: DEMO_DISCLAIMER,
   };
   mockHistory.unshift(toRecord(result));
@@ -139,6 +147,7 @@ function generateDashboardHistory(days: number): EvidenceRecord[] {
             image_sha256: Array.from({ length: 64 }, (_, k) => "0123456789abcdef"[(d + t + k) % 16]).join(""),
             image_url: "",
           },
+          explanation: DEMO_EXPLANATION,
           disclaimer: DEMO_DISCLAIMER,
         }),
       );
@@ -169,6 +178,7 @@ export const mockHistory: EvidenceRecord[] = [
       image_sha256: "a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff",
       image_url: "",
     },
+    explanation: DEMO_EXPLANATION,
     disclaimer: DEMO_DISCLAIMER,
   }),
   toRecord({
@@ -186,6 +196,7 @@ export const mockHistory: EvidenceRecord[] = [
       image_sha256: "ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221",
       image_url: "",
     },
+    explanation: DEMO_EXPLANATION,
     disclaimer: DEMO_DISCLAIMER,
   }),
   toRecord({
@@ -203,6 +214,7 @@ export const mockHistory: EvidenceRecord[] = [
       image_sha256: "0011223344556677889900aabbccddeeff00112233445566778899aabbccd",
       image_url: "",
     },
+    explanation: DEMO_EXPLANATION,
     disclaimer: DEMO_DISCLAIMER,
   }),
 ];

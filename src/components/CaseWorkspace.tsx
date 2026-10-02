@@ -128,7 +128,7 @@ export function CaseWorkspace() {
                   <p className="mono text-xs text-muted-foreground">{fieldCase.reference}</p>
                   <p className="mt-1 text-sm font-semibold">{fieldCase.title}</p>
                 </div>
-                <span className="rounded-md bg-accent px-2 py-1 text-xs font-medium">{fieldCase.status.replaceAll("_", " ")}</span>
+                <span className="rounded-md bg-accent px-2 py-1 text-xs font-medium">{fieldCase.status.replace(/_/g, " ")}</span>
               </div>
               {fieldCase.lab_reports?.length ? (
                 <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><FileText className="h-3.5 w-3.5" aria-hidden="true" />{fieldCase.lab_reports.length} laboratory report{fieldCase.lab_reports.length === 1 ? "" : "s"} attached</p>
