@@ -116,7 +116,7 @@ export function health(): Promise<HealthResponse> {
 }
 
 export function login(badge_id: string, password: string): Promise<LoginResponse> {
-  return fetch(`${API_PREFIX}/auth/login`, {
+  return fetch(`${API_PREFIX}/auth/login`, requestInit({
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ badge_id, password }),
